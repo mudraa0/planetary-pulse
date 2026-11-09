@@ -5,3 +5,4 @@
 - UV mapping convention: lon=0 at texture center (u=0.5), phi=(90-lat)*DEG, theta=(lon+180)*DEG per geo.ts spec; verified alignment with prime meridian.
 - frameloop='demand' chosen for GlobeCanvas with manual invalidate() calls on interaction and state change. Reason: Prevents GPU overheating while maintaining crisp 60fps response.
 - Magic UI components audited to eliminate hardcoded colors and frosted blur. Reason: Strict adherence to Section 8 matte/opaque design tokens.
+- Embedded official NASA Eyes on Earth interactive application (https://eyes.nasa.gov/apps/earth/#/satellites?rate=1) via responsive iframe into globe section with NASA/JPL-Caltech attribution. Reason: User request for direct official NASA interactive digital twin integration while preserving telemetry deck and design.
