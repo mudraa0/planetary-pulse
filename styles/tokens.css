@@ -1,0 +1,32 @@
+:root {
+  /* surfaces */
+  --surface-base: #0a0a0a;      /* USER-INJECT */
+  --surface-raised: #141414;    /* USER-INJECT */
+  --surface-sunken: #050505;    /* USER-INJECT */
+  --border-hairline: #2a2a2a;   /* USER-INJECT */
+  /* text */
+  --text-primary: #f0f0f0;      /* USER-INJECT */
+  --text-secondary: #a0a0a0;    /* USER-INJECT */
+  --text-muted: #606060;        /* USER-INJECT */
+  /* accents and state */
+  --accent-primary: #c8c8c8;    /* USER-INJECT */
+  --accent-temp: #d4d4d4;       /* USER-INJECT */
+  --accent-ocean: #b0b0b0;      /* USER-INJECT */
+  --accent-air: #c0c0c0;        /* USER-INJECT */
+  --state-warning: #e0e0e0;     /* USER-INJECT */
+  --state-danger: #f0f0f0;      /* USER-INJECT */
+  --state-positive: #a8a8a8;    /* USER-INJECT */
+  /* sequential data ramp, low to high */
+  --ramp-1: #1a1a1a; --ramp-2: #3a3a3a; --ramp-3: #5a5a5a; --ramp-4: #8a8a8a; --ramp-5: #d0d0d0;
+  /* diverging data ramp, negative to positive */
+  --div-neg-2: #1a1a1a; --div-neg-1: #3a3a3a; --div-zero: #787878; --div-pos-1: #b0b0b0; --div-pos-2: #e8e8e8;
+  /* chart series */
+  --series-1: #e0e0e0; --series-2: #a0a0a0; --series-3: #686868; --series-4: #404040;
+  /* scene */
+  --space-bg: #030303;          /* USER-INJECT */
+  --atmosphere-rim: #c8c8c8;    /* USER-INJECT */
+  --probe-ring: #f0f0f0;        /* USER-INJECT */
+  /* shape and motion */
+  --radius-sm: 4px; --radius-md: 8px;
+  --motion-fast: 150ms; --motion-base: 250ms;
+}

@@ -1,0 +1,91 @@
+'use client';
+
+import { Suspense, useState, useEffect } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { Globe } from './Globe';
+import { Atmosphere } from './Atmosphere';
+import { Starfield } from './Starfield';
+import { LayerManager } from './LayerManager';
+import { ParticleField } from './ParticleField';
+import { ProbeMarker } from './ProbeMarker';
+import { PointerPicker } from './PointerPicker';
+import { CameraRig } from './CameraRig';
+import { useExplorerStore } from '@/store/useExplorerStore';
+import { tokenToColor, observeThemeChanges } from '@/lib/colormap';
+
+export function GlobeCanvas() {
+  const setMode = useExplorerStore((s) => s.setMode);
+  const [webglSupported, setWebglSupported] = useState(true);
+
+  // Monitor theme changes for space background clear color
+  useEffect(() => {
+    const checkWebGL = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) setWebglSupported(false);
+      } catch {
+        setWebglSupported(false);
+      }
+    };
+    checkWebGL();
+  }, []);
+
+  if (!webglSupported) {
+    // Graceful automatic fallback to 2D flat map mode per Section 4.5
+    setMode('2d');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          width: '100%',
+          backgroundColor: 'var(--surface-base)',
+          color: 'var(--text-secondary)',
+          fontSize: '0.875rem',
+        }}
+      >
+        WebGL context unavailable. Switched automatically to 2D Map view.
+      </div>
+    );
+  }
+
+  const spaceColor = tokenToColor('--space-bg', '#030303');
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <Canvas
+        dpr={[1, 2]}
+        camera={{ fov: 45, near: 0.1, far: 100, position: [0, 0, 3.2] }}
+        gl={{
+          antialias: true,
+          alpha: false,
+          powerPreference: 'high-performance',
+        }}
+        frameloop="demand"
+        onCreated={({ gl }) => {
+          gl.setClearColor(spaceColor);
+          observeThemeChanges(() => {
+            const nextSpaceColor = tokenToColor('--space-bg', '#030303');
+            gl.setClearColor(nextSpaceColor);
+          });
+        }}
+      >
+        <Suspense fallback={null}>
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[4, 3, 5]} intensity={1.1} />
+          <Starfield />
+          <Globe />
+          <Atmosphere />
+          <LayerManager />
+          <ParticleField />
+          <ProbeMarker />
+          <PointerPicker />
+          <CameraRig />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
