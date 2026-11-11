@@ -16,11 +16,14 @@ interface AnomalyBarsProps {
   unit: string;
 }
 
-const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+const MONTH_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
 
 export function AnomalyBars({ monthlyAnomalies, unit }: AnomalyBarsProps) {
   const data = monthlyAnomalies.map((val, idx) => ({
-    month: MONTH_LABELS[idx],
+    month: MONTH_NAMES[idx],
     anomaly: val,
   }));
 
@@ -28,6 +31,9 @@ export function AnomalyBars({ monthlyAnomalies, unit }: AnomalyBarsProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       <div
         style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
           fontSize: '0.6875rem',
           fontWeight: 700,
           textTransform: 'uppercase',
@@ -36,12 +42,15 @@ export function AnomalyBars({ monthlyAnomalies, unit }: AnomalyBarsProps) {
           fontFamily: 'monospace',
         }}
       >
-        Monthly Standardized Anomalies
+        <span>Monthly Baseline Deviations</span>
+        <span style={{ fontSize: '0.625rem', color: 'var(--text-secondary)' }}>
+          Standardized Anomaly ({unit})
+        </span>
       </div>
 
-      <div style={{ width: '100%', height: '110px' }}>
+      <div style={{ width: '100%', height: '125px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
             <XAxis
               dataKey="month"
               stroke="var(--text-muted)"
@@ -55,7 +64,7 @@ export function AnomalyBars({ monthlyAnomalies, unit }: AnomalyBarsProps) {
               tickLine={false}
               axisLine={{ stroke: 'var(--border-hairline)' }}
             />
-            <ReferenceLine y={0} stroke="var(--border-hairline)" />
+            <ReferenceLine y={0} stroke="var(--border-hairline)" strokeWidth={1.5} />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'var(--surface-raised)',
@@ -69,10 +78,10 @@ export function AnomalyBars({ monthlyAnomalies, unit }: AnomalyBarsProps) {
                 `${typeof value === 'number' && value > 0 ? '+' : ''}${
                   typeof value === 'number' ? value.toFixed(2) : String(value ?? '')
                 } ${unit}`,
-                'Anomaly',
+                'Deviation',
               ]}
             />
-            <Bar dataKey="anomaly">
+            <Bar dataKey="anomaly" radius={[2, 2, 0, 0]}>
               {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}

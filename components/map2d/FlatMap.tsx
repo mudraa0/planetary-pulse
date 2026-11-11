@@ -10,7 +10,6 @@ import { LAYER_REGISTRY } from '@/lib/layers';
 import { getComputedToken } from '@/lib/colormap';
 import type { LayerId } from '@/types/layers';
 
-/** Component handling map click events to set probe. */
 function MapClickHandler() {
   const setProbe = useExplorerStore((s) => s.setProbe);
 
@@ -27,7 +26,6 @@ function MapClickHandler() {
   return null;
 }
 
-/** Parses hex color to [r, g, b]. */
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
   if (clean.length === 3) {
@@ -50,7 +48,6 @@ export function FlatMap() {
 
   const { data: gridField } = useGridField(activeLayer, timeIso);
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
-
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -72,9 +69,7 @@ export function FlatMap() {
 
     const imgData = ctx.createImageData(W, H);
     const pixels = imgData.data;
-
-    // Resolve color stops from tokens
-    const stops = def.rampTokens.map((t) => hexToRgb(getComputedToken(t, '#888888')));
+    const stops = def.rampTokens.map((t) => hexToRgb(getComputedToken(t, '#38bdf8')));
     const numStops = stops.length;
 
     for (let j = 0; j < H; j++) {
@@ -83,7 +78,7 @@ export function FlatMap() {
         const pIdx = idx * 4;
 
         if (mask[idx] === 0 || !Number.isFinite(scalar[idx])) {
-          pixels[pIdx + 3] = 0; // Transparent
+          pixels[pIdx + 3] = 0;
           continue;
         }
 
@@ -100,7 +95,7 @@ export function FlatMap() {
         pixels[pIdx + 0] = Math.round(c1[0] + (c2[0] - c1[0]) * frac);
         pixels[pIdx + 1] = Math.round(c1[1] + (c2[1] - c1[1]) * frac);
         pixels[pIdx + 2] = Math.round(c1[2] + (c2[2] - c1[2]) * frac);
-        pixels[pIdx + 3] = 200; // 0.8 opacity
+        pixels[pIdx + 3] = 210;
       }
     }
 
@@ -119,8 +114,26 @@ export function FlatMap() {
         width: '100%',
         height: '100%',
         backgroundColor: 'var(--space-bg)',
+        position: 'relative',
       }}
     >
+      <style>{`
+        .leaflet-container {
+          background-color: #020408 !important;
+        }
+        .leaflet-bar a {
+          background-color: var(--surface-raised) !important;
+          color: var(--text-primary) !important;
+          border-color: var(--border-hairline) !important;
+        }
+        .leaflet-control-attribution {
+          background-color: var(--surface-sunken) !important;
+          color: var(--text-muted) !important;
+          font-family: monospace;
+          font-size: 10px;
+          border: 1px solid var(--border-hairline);
+        }
+      `}</style>
       <MapContainer
         crs={L.CRS.EPSG4326}
         center={[0, 0]}
@@ -134,11 +147,13 @@ export function FlatMap() {
         style={{
           width: '100%',
           height: '100%',
-          backgroundColor: 'var(--space-bg)',
+          backgroundColor: '#020408',
         }}
       >
         <MapClickHandler />
-        {overlayUrl && <ImageOverlay url={overlayUrl} bounds={bounds} />}
+        {/* Real NASA Satellite Basemap underlay for equirectangular projection */}
+        <ImageOverlay url="/textures/earth-blue-marble.jpg" bounds={bounds} opacity={0.65} />
+        {overlayUrl && <ImageOverlay url={overlayUrl} bounds={bounds} opacity={0.9} />}
       </MapContainer>
     </div>
   );

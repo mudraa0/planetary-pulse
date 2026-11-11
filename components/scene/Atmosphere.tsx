@@ -20,9 +20,9 @@ const ATMOSPHERE_FRAGMENT = /* glsl */ `
   varying vec3 vNormal;
   varying vec3 vViewDir;
   void main() {
-    // Fresnel rim intensity falloff
-    float intensity = pow(1.0 - abs(dot(vNormal, vViewDir)), 2.8);
-    gl_FragColor = vec4(uAtmosphereColor, intensity * 0.7);
+    // Elegant, thin Rayleigh scattering rim glow without harsh gray halo
+    float intensity = pow(1.0 - abs(dot(vNormal, vViewDir)), 3.2);
+    gl_FragColor = vec4(uAtmosphereColor, intensity * 0.55);
   }
 `;
 
@@ -31,7 +31,7 @@ export function Atmosphere() {
 
   const uniforms = useMemo(() => {
     return {
-      uAtmosphereColor: { value: tokenToColor('--atmosphere-rim', '#c8c8c8') },
+      uAtmosphereColor: { value: tokenToColor('--atmosphere-rim', '#38bdf8') },
     };
   }, []);
 
@@ -40,7 +40,7 @@ export function Atmosphere() {
       if (materialRef.current) {
         materialRef.current.uniforms['uAtmosphereColor'].value = tokenToColor(
           '--atmosphere-rim',
-          '#c8c8c8'
+          '#38bdf8'
         );
       }
     });
@@ -48,7 +48,7 @@ export function Atmosphere() {
   }, []);
 
   return (
-    <mesh scale={[1.025, 1.025, 1.025]}>
+    <mesh scale={[1.018, 1.018, 1.018]}>
       <sphereGeometry args={[1, 64, 64]} />
       <shaderMaterial
         ref={materialRef}
@@ -58,6 +58,7 @@ export function Atmosphere() {
         side={THREE.BackSide}
         transparent
         depthWrite={false}
+        blending={THREE.AdditiveBlending}
       />
     </mesh>
   );

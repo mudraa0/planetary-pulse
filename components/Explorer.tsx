@@ -10,9 +10,9 @@ import { Legend } from '@/components/hud/Legend';
 import { CursorReadout } from '@/components/hud/CursorReadout';
 import { DrilldownPanel } from '@/components/panels/DrilldownPanel';
 
-// Dynamic client-side only imports for 3D NASA Eyes Globe and 2D Leaflet
-const NasaEyesGlobe = dynamic(
-  () => import('@/components/scene/NasaEyesGlobe').then((m) => m.NasaEyesGlobe),
+// Dynamic client-side only imports for 3D WebGL Canvas and 2D Leaflet
+const GlobeCanvas = dynamic(
+  () => import('@/components/scene/GlobeCanvas').then((m) => m.GlobeCanvas),
   {
     ssr: false,
     loading: () => (
@@ -20,7 +20,6 @@ const NasaEyesGlobe = dynamic(
         style={{
           width: '100%',
           height: '100%',
-          minHeight: '650px',
           backgroundColor: 'var(--space-bg)',
           display: 'flex',
           alignItems: 'center',
@@ -30,7 +29,7 @@ const NasaEyesGlobe = dynamic(
           fontFamily: 'monospace',
         }}
       >
-        INITIALIZING NASA EYES ON EARTH...
+        INITIALIZING PLANETARY TWIN...
       </div>
     ),
   }
@@ -103,7 +102,7 @@ export function Explorer() {
               overflow: 'hidden',
             }}
           >
-            {mode === '3d' ? <NasaEyesGlobe /> : <FlatMap />}
+            {mode === '3d' ? <GlobeCanvas /> : <FlatMap />}
 
             {/* Bottom-left Data Legend */}
             <div

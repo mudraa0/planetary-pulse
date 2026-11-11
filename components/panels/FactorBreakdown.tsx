@@ -23,13 +23,7 @@ export function FactorBreakdown({ factors }: FactorBreakdownProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.125rem',
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
         <span
           style={{
             fontSize: '0.6875rem',
@@ -40,7 +34,7 @@ export function FactorBreakdown({ factors }: FactorBreakdownProps) {
             fontFamily: 'monospace',
           }}
         >
-          Factor Contribution to Deviation
+          Contributing Variance Factors
         </span>
         <span
           style={{
@@ -49,16 +43,16 @@ export function FactorBreakdown({ factors }: FactorBreakdownProps) {
             fontStyle: 'italic',
           }}
         >
-          * Statistical association rank (absolute z-score), not mechanistic causation
+          * Statistical association rank (normalized z-score), not mechanistic causality
         </span>
       </div>
 
-      <div style={{ width: '100%', height: '120px' }}>
+      <div style={{ width: '100%', height: '140px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             layout="vertical"
             data={chartData}
-            margin={{ top: 0, right: 10, left: 10, bottom: 0 }}
+            margin={{ top: 4, right: 12, left: 10, bottom: 0 }}
           >
             <XAxis
               type="number"
@@ -74,7 +68,7 @@ export function FactorBreakdown({ factors }: FactorBreakdownProps) {
               fontSize={9}
               tickLine={false}
               axisLine={false}
-              width={120}
+              width={160}
             />
             <Tooltip
               contentStyle={{
@@ -87,14 +81,14 @@ export function FactorBreakdown({ factors }: FactorBreakdownProps) {
               }}
               formatter={(value) => [
                 typeof value === 'number' ? value.toFixed(2) : String(value ?? ''),
-                'Z-Score',
+                'Contribution (z)',
               ]}
             />
-            <Bar dataKey="zScore" barSize={12}>
+            <Bar dataKey="zScore" barSize={12} radius={[0, 2, 2, 0]}>
               {chartData.map((entry, index) => (
                 <Cell
                   key={`factor-${index}`}
-                  fill={entry.zScore >= 0 ? 'var(--series-1)' : 'var(--series-3)'}
+                  fill={entry.zScore >= 0 ? 'var(--series-1)' : 'var(--series-2)'}
                 />
               ))}
             </Bar>

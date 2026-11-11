@@ -33,7 +33,6 @@ export function CameraRig() {
   const zoomDerivedProbeRef = useRef<boolean>(false);
   const zoomDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Trigger camera fly-to when probe is clicked/selected
   useEffect(() => {
     if (!probe) return;
 
@@ -43,13 +42,14 @@ export function CameraRig() {
     const currentDist = camera.position.length();
     const currentDir = camera.position.clone().normalize();
 
+    // Sensible fly-to distance (2.2) so globe never clips the viewport edges
     flyStateRef.current = {
       startDir: currentDir,
       targetDir,
       startDistance: currentDist,
-      targetDistance: Math.max(1.85, Math.min(2.8, currentDist)),
+      targetDistance: Math.max(2.1, Math.min(2.8, currentDist)),
       startTime: performance.now(),
-      durationMs: 900,
+      durationMs: 850,
     };
     invalidate();
   }, [probe, camera, invalidate]);
@@ -61,18 +61,20 @@ export function CameraRig() {
     const now = performance.now();
     const currentDist = camera.position.length();
 
-    // Scale rotate and zoom speeds by normalized distance
+    // Scale rotate/zoom speeds smoothly
     const normDist = clamp((currentDist - 1.25) / (6.0 - 1.25), 0, 1);
-    controls.rotateSpeed = 0.25 + 0.75 * normDist;
+    controls.rotateSpeed = 0.3 + 0.7 * normDist;
     controls.zoomSpeed = 0.4 + 0.6 * normDist;
 
-    // Handle smooth fly-to animation
+    // Center offset when drill-down panel opens to prevent cropping
+    const targetCenterX = panelOpen ? 0.32 : 0.0;
+    controls.target.x = THREE.MathUtils.lerp(controls.target.x, targetCenterX, 0.08);
+
     if (flyStateRef.current) {
       const fly = flyStateRef.current;
       const elapsed = now - fly.startTime;
       const progress = clamp(elapsed / fly.durationMs, 0, 1);
 
-      // Smooth easeInOutCubic
       const eased =
         progress < 0.5
           ? 4 * progress * progress * progress
@@ -83,7 +85,6 @@ export function CameraRig() {
         fly.startDistance + (fly.targetDistance - fly.startDistance) * eased;
 
       camera.position.copy(interpolatedDir.multiplyScalar(interpolatedDist));
-      controls.target.set(0, 0, 0);
       controls.update();
       invalidate();
 
@@ -93,7 +94,6 @@ export function CameraRig() {
       return;
     }
 
-    // Zoom-driven drill-down
     if (currentDist < 1.6 && !probe) {
       if (!zoomDebounceTimerRef.current) {
         zoomDebounceTimerRef.current = setTimeout(() => {
@@ -104,7 +104,7 @@ export function CameraRig() {
           zoomDebounceTimerRef.current = null;
         }, 400);
       }
-    } else if (currentDist > 2.0 && zoomDerivedProbeRef.current) {
+    } else if (currentDist > 2.2 && zoomDerivedProbeRef.current) {
       if (zoomDebounceTimerRef.current) {
         clearTimeout(zoomDebounceTimerRef.current);
         zoomDebounceTimerRef.current = null;
@@ -113,11 +113,10 @@ export function CameraRig() {
       closePanel();
     }
 
-    // Auto-rotate when idle for 6 seconds
     const isIdle = now - lastInteractionTimeRef.current > 6000;
     if (isIdle && !reducedMotion && !panelOpen) {
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.4;
+      controls.autoRotateSpeed = 0.35;
       controls.update();
       invalidate();
     } else {
@@ -127,7 +126,6 @@ export function CameraRig() {
 
   const onUserInteraction = () => {
     lastInteractionTimeRef.current = performance.now();
-    // Cancels fly-to smoothly on manual user input
     if (flyStateRef.current) {
       flyStateRef.current = null;
     }
@@ -138,7 +136,7 @@ export function CameraRig() {
     <OrbitControls
       ref={controlsRef}
       enablePan={false}
-      minDistance={1.25}
+      minDistance={1.3}
       maxDistance={6.0}
       enableDamping
       dampingFactor={0.06}

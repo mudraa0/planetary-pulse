@@ -1,32 +1,55 @@
 :root {
-  /* surfaces */
-  --surface-base: #0a0a0a;      /* USER-INJECT */
-  --surface-raised: #141414;    /* USER-INJECT */
-  --surface-sunken: #050505;    /* USER-INJECT */
-  --border-hairline: #2a2a2a;   /* USER-INJECT */
-  /* text */
-  --text-primary: #f0f0f0;      /* USER-INJECT */
-  --text-secondary: #a0a0a0;    /* USER-INJECT */
-  --text-muted: #606060;        /* USER-INJECT */
-  /* accents and state */
-  --accent-primary: #c8c8c8;    /* USER-INJECT */
-  --accent-temp: #d4d4d4;       /* USER-INJECT */
-  --accent-ocean: #b0b0b0;      /* USER-INJECT */
-  --accent-air: #c0c0c0;        /* USER-INJECT */
-  --state-warning: #e0e0e0;     /* USER-INJECT */
-  --state-danger: #f0f0f0;      /* USER-INJECT */
-  --state-positive: #a8a8a8;    /* USER-INJECT */
-  /* sequential data ramp, low to high */
-  --ramp-1: #1a1a1a; --ramp-2: #3a3a3a; --ramp-3: #5a5a5a; --ramp-4: #8a8a8a; --ramp-5: #d0d0d0;
-  /* diverging data ramp, negative to positive */
-  --div-neg-2: #1a1a1a; --div-neg-1: #3a3a3a; --div-zero: #787878; --div-pos-1: #b0b0b0; --div-pos-2: #e8e8e8;
-  /* chart series */
-  --series-1: #e0e0e0; --series-2: #a0a0a0; --series-3: #686868; --series-4: #404040;
-  /* scene */
-  --space-bg: #030303;          /* USER-INJECT */
-  --atmosphere-rim: #c8c8c8;    /* USER-INJECT */
-  --probe-ring: #f0f0f0;        /* USER-INJECT */
-  /* shape and motion */
-  --radius-sm: 4px; --radius-md: 8px;
-  --motion-fast: 150ms; --motion-base: 250ms;
+  /* Surfaces - matte, opaque precision control deck */
+  --surface-base: #06090e;
+  --surface-raised: #0d121a;
+  --surface-sunken: #030508;
+  --surface-overlay: #131a24;
+  --border-hairline: #1c2636;
+  --border-active: #2e3e56;
+
+  /* Typography */
+  --text-primary: #f0f4f8;
+  --text-secondary: #94a3b8;
+  --text-muted: #57657a;
+  --text-accent: #38bdf8;
+
+  /* Domain accents & state indicators */
+  --accent-primary: #38bdf8;
+  --accent-temp: #f97316;
+  --accent-ocean: #0ea5e9;
+  --accent-air: #10b981;
+  --state-warning: #f59e0b;
+  --state-danger: #ef4444;
+  --state-positive: #10b981;
+
+  /* Sequential data ramp - Low to High (Cool Cyan to Vivid Amber) */
+  --ramp-1: #082f49;
+  --ramp-2: #0284c7;
+  --ramp-3: #10b981;
+  --ramp-4: #f59e0b;
+  --ramp-5: #ef4444;
+
+  /* Diverging data ramp - Negative (Cool Blue) through Neutral to Positive (Warm Red) */
+  --div-neg-2: #2563eb;
+  --div-neg-1: #60a5fa;
+  --div-zero: #94a3b8;
+  --div-pos-1: #f87171;
+  --div-pos-2: #dc2626;
+
+  /* Chart Series */
+  --series-1: #38bdf8;
+  --series-2: #818cf8;
+  --series-3: #34d399;
+  --series-4: #fbbf24;
+
+  /* 3D Scene tokens */
+  --space-bg: #020408;
+  --atmosphere-rim: #38bdf8;
+  --probe-ring: #38bdf8;
+
+  /* Shape & motion */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
 }

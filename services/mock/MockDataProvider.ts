@@ -16,29 +16,26 @@ import { bilinearSample } from '@/lib/sampling';
 const GRID_W = 360;
 const GRID_H = 181;
 
-/** Known major geographic landmarks for reverse-geocoding. */
-const GEOGRAPHIC_ANCHORS = [
-  { name: 'London, United Kingdom', lat: 51.5, lon: -0.1 },
-  { name: 'Tokyo, Japan', lat: 35.6, lon: 139.6 },
-  { name: 'New York, United States', lat: 40.7, lon: -74.0 },
-  { name: 'Sydney, Australia', lat: -33.8, lon: 151.2 },
-  { name: 'Nairobi, Kenya', lat: -1.2, lon: 36.8 },
-  { name: 'São Paulo, Brazil', lat: -23.5, lon: -46.6 },
-  { name: 'Reykjavik, Iceland', lat: 64.1, lon: -21.9 },
-  { name: 'Cairo, Egypt', lat: 30.0, lon: 31.2 },
-  { name: 'Mumbai, India', lat: 19.0, lon: 72.8 },
-  { name: 'Honolulu, Hawaii', lat: 21.3, lon: -157.8 },
-  { name: 'North Atlantic Ocean', lat: 35.0, lon: -40.0 },
-  { name: 'South Pacific Basin', lat: -25.0, lon: -130.0 },
-  { name: 'Indian Ocean Gyre', lat: -20.0, lon: 80.0 },
-  { name: 'Arctic Ice Sheet', lat: 80.0, lon: 0.0 },
-  { name: 'Antarctic Continental Shelf', lat: -75.0, lon: 0.0 },
+export const GEOGRAPHIC_ANCHORS = [
+  { name: 'London, United Kingdom', lat: 51.5074, lon: -0.1278, isOcean: false },
+  { name: 'Tokyo, Japan', lat: 35.6762, lon: 139.6503, isOcean: false },
+  { name: 'New York, United States', lat: 40.7128, lon: -74.006, isOcean: false },
+  { name: 'Sydney, Australia', lat: -33.8688, lon: 151.2093, isOcean: false },
+  { name: 'Cairo, Egypt', lat: 30.0444, lon: 31.2357, isOcean: false },
+  { name: 'Mumbai, India', lat: 19.076, lon: 72.8777, isOcean: false },
+  { name: 'São Paulo, Brazil', lat: -23.5505, lon: -46.6333, isOcean: false },
+  { name: 'Reykjavik, Iceland', lat: 64.1466, lon: -21.9426, isOcean: false },
+  { name: 'Tasman Sea (Off New Zealand)', lat: -41.1, lon: 170.5, isOcean: true },
+  { name: 'Gulf Stream Basin', lat: 34.0, lon: -65.0, isOcean: true },
+  { name: 'Equatorial Pacific (El Niño Region)', lat: 0.0, lon: -140.0, isOcean: true },
+  { name: 'Southern Ocean Drift', lat: -56.0, lon: -100.0, isOcean: true },
+  { name: 'North Atlantic Deep', lat: 48.0, lon: -30.0, isOcean: true },
+  { name: 'Sargasso Sea', lat: 28.0, lon: -55.0, isOcean: true },
 ];
 
-/** Returns an approximate reverse-geocoded label based on proximity or coordinate quad. */
-function reverseGeocode(lat: number, lon: number): string {
+function reverseGeocode(lat: number, lon: number): { placeName: string; isOcean: boolean } {
   let nearestDist = Infinity;
-  let nearestName = '';
+  let nearest = GEOGRAPHIC_ANCHORS[0];
 
   for (const anchor of GEOGRAPHIC_ANCHORS) {
     const dLat = anchor.lat - lat;
@@ -46,70 +43,64 @@ function reverseGeocode(lat: number, lon: number): string {
     const dist = Math.sqrt(dLat * dLat + dLon * dLon);
     if (dist < nearestDist) {
       nearestDist = dist;
-      nearestName = anchor.name;
+      nearest = anchor;
     }
   }
 
-  if (nearestDist < 8) {
-    return nearestName;
+  if (nearestDist < 6.0) {
+    return { placeName: nearest.name, isOcean: nearest.isOcean };
   }
 
+  const isOcean = Math.abs(lat) > 80 ? false : Math.cos((lat * Math.PI) / 180) > 0.35 && Math.abs(lon + 140) < 60;
   const latHem = lat >= 0 ? `${lat.toFixed(1)}°N` : `${Math.abs(lat).toFixed(1)}°S`;
   const lonHem = lon >= 0 ? `${lon.toFixed(1)}°E` : `${Math.abs(lon).toFixed(1)}°W`;
 
-  if (lat > 66) return `Arctic Region (${latHem}, ${lonHem})`;
-  if (lat < -60) return `Southern Ocean (${latHem}, ${lonHem})`;
-  return `Point Probe (${latHem}, ${lonHem})`;
+  if (lat > 66) return { placeName: `Arctic Basin (${latHem}, ${lonHem})`, isOcean: true };
+  if (lat < -60) return { placeName: `Southern Ocean (${latHem}, ${lonHem})`, isOcean: true };
+  return { placeName: `Observation Point (${latHem}, ${lonHem})`, isOcean };
 }
 
-/** Precomputed ocean mask buffer (1 = ocean/water, 0 = land). */
-const cachedOceanMask = new Uint8Array(GRID_W * GRID_H);
-let isMaskInitialized = false;
+/** Precomputed ocean mask (1 = ocean, 0 = land). */
+const oceanMask = new Uint8Array(GRID_W * GRID_H);
+let isMaskReady = false;
 
-function initOceanMask() {
-  if (isMaskInitialized) return;
+function getOceanMask(): Uint8Array {
+  if (isMaskReady) return oceanMask;
   for (let j = 0; j < GRID_H; j++) {
     const lat = 90 - (j / (GRID_H - 1)) * 180;
     for (let i = 0; i < GRID_W; i++) {
       const lon = -180 + (i / GRID_W) * 360;
-      // Multi-frequency noise producing continental landmasses
-      const continentNoise = fbm(lon / 55 + 2.5, lat / 40 + 1.2, 5, 108);
-      const isLand = continentNoise > 0.08 && Math.abs(lat) < 78;
-      cachedOceanMask[j * GRID_W + i] = isLand ? 0 : 1;
+      // High-resolution continental coastline approximation
+      const c = fbm(lon / 55 + 2.5, lat / 40 + 1.2, 5, 108);
+      const isLand = c > 0.08 && Math.abs(lat) < 78;
+      oceanMask[j * GRID_W + i] = isLand ? 0 : 1;
     }
   }
-  isMaskInitialized = true;
+  isMaskReady = true;
+  return oceanMask;
 }
 
 export class MockDataProvider implements DataProvider {
-  private gridCache = new Map<string, GridField>();
-
-  constructor() {
-    initOceanMask();
-  }
+  private cache = new Map<string, GridField>();
 
   async getGridField(layerId: string, timeIso: string): Promise<GridField> {
-    const cacheKey = `${layerId}:${timeIso.slice(0, 10)}`;
-    if (this.gridCache.has(cacheKey)) {
-      return this.gridCache.get(cacheKey)!;
-    }
+    const key = `${layerId}:${timeIso.slice(0, 10)}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
 
     const def = LAYER_REGISTRY[layerId as LayerId] || LAYER_REGISTRY['temperature'];
-    const isOceanOnly = def.mask === 'ocean';
-
+    const mask = getOceanMask();
     const scalar = new Float32Array(GRID_W * GRID_H);
-    const mask = isOceanOnly ? cachedOceanMask : new Uint8Array(GRID_W * GRID_H).fill(1);
+    const isOcean = def.mask === 'ocean';
 
-    let uComponent: Float32Array | undefined;
-    let vComponent: Float32Array | undefined;
-
+    let uComp: Float32Array | undefined;
+    let vComp: Float32Array | undefined;
     if (def.vector) {
-      uComponent = new Float32Array(GRID_W * GRID_H);
-      vComponent = new Float32Array(GRID_W * GRID_H);
+      uComp = new Float32Array(GRID_W * GRID_H);
+      vComp = new Float32Array(GRID_W * GRID_H);
     }
 
-    const [rangeMin, rangeMax] = def.range;
-    const layerSeed = layerId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 100);
+    const [rMin, rMax] = def.range;
+    const seed = layerId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 42);
 
     for (let j = 0; j < GRID_H; j++) {
       const lat = 90 - (j / (GRID_H - 1)) * 180;
@@ -120,88 +111,81 @@ export class MockDataProvider implements DataProvider {
         const idx = j * GRID_W + i;
         const lon = -180 + (i / GRID_W) * 360;
 
-        if (isOceanOnly && cachedOceanMask[idx] === 0) {
+        if (isOcean && mask[idx] === 0) {
           scalar[idx] = NaN;
-          if (uComponent && vComponent) {
-            uComponent[idx] = 0;
-            vComponent[idx] = 0;
+          if (uComp && vComp) {
+            uComp[idx] = 0;
+            vComp[idx] = 0;
           }
           continue;
         }
 
-        let normalizedVal = 0.5;
+        let val = 0;
 
         switch (layerId) {
           case 'temperature': {
-            // Latitude-dependent thermal gradient + topographical variation
-            const thermalBase = Math.max(0, cosLat);
-            const noise = fbm(lon / 40, lat / 30, 4, layerSeed);
-            normalizedVal = 0.75 * thermalBase + 0.25 * (noise * 0.5 + 0.5);
+            // Realistic atmospheric global temperature gradient: -50°C polar to +35°C tropical
+            const baseTemp = -45 + 75 * Math.pow(Math.max(0, cosLat), 0.9);
+            const noise = fbm(lon / 50, lat / 35, 4, seed) * 8.0;
+            val = baseTemp + noise;
             break;
           }
           case 'anomaly': {
-            // Diverging anomaly centered around 0 with high latitude amplification
-            const polarAmp = 1 + Math.abs(lat) / 60;
-            const noise = fbm(lon / 30, lat / 25, 4, layerSeed);
-            normalizedVal = 0.5 + noise * 0.35 * polarAmp;
+            // Temperature anomaly centered at 0 with Arctic amplification
+            const polarAmp = 1.0 + (lat > 50 ? (lat - 50) / 25 : 0.0);
+            const noise = fbm(lon / 35, lat / 25, 4, seed + 10);
+            val = noise * 2.8 * polarAmp;
             break;
           }
           case 'aqi': {
-            // Higher inland and in populated mid-latitude belts
-            const noise = fbm(lon / 25, lat / 20, 5, layerSeed);
-            const isContinent = cachedOceanMask[idx] === 0;
-            const urbanFactor = isContinent ? 0.35 : 0.05;
-            normalizedVal = Math.max(0, Math.min(1, noise * 0.45 + urbanFactor));
+            // Air quality index: high in continental industrial zones, low over oceans
+            const isContinent = mask[idx] === 0;
+            const noise = (fbm(lon / 30, lat / 25, 4, seed + 20) + 1) * 0.5;
+            val = isContinent ? 35 + noise * 190 : 8 + noise * 30;
             break;
           }
           case 'wind': {
-            // Atmospheric Hadley cells & jet stream patterns
-            const jetStream = Math.exp(-Math.pow((Math.abs(lat) - 45) / 15, 2));
-            const noise = fbm(lon / 45, lat / 35, 4, layerSeed);
-            normalizedVal = Math.max(0, Math.min(1, 0.4 * jetStream + 0.6 * (noise * 0.5 + 0.5)));
-
-            if (uComponent && vComponent) {
-              const uNoise = fbm(lon / 30, lat / 30, 3, layerSeed + 10);
-              const vNoise = fbm(lon / 30, lat / 30, 3, layerSeed + 20);
-              const zonalTrade = lat > 0 && lat < 30 ? -8 : lat > 35 && lat < 60 ? 14 : 4;
-              uComponent[idx] = zonalTrade + uNoise * 10;
-              vComponent[idx] = vNoise * 8;
+            // Wind speed: trade winds, mid-latitude westerlies, polar easterlies
+            const jet = Math.exp(-Math.pow((Math.abs(lat) - 45) / 14, 2));
+            const noise = (fbm(lon / 40, lat / 30, 4, seed + 30) + 1) * 0.5;
+            val = 3.0 + jet * 16.0 + noise * 8.0;
+            if (uComp && vComp) {
+              const uSign = lat > 0 && lat < 30 ? -1 : lat > 35 && lat < 65 ? 1 : -0.5;
+              uComp[idx] = uSign * (val * 0.85);
+              vComp[idx] = (fbm(lon / 30, lat / 30, 3, seed + 40)) * 6.0;
             }
             break;
           }
           case 'sst': {
-            // Marine surface temperature
-            const thermalBase = Math.pow(Math.max(0, cosLat), 0.85);
-            const noise = fbm(lon / 50, lat / 40, 4, layerSeed);
-            normalizedVal = 0.8 * thermalBase + 0.2 * (noise * 0.5 + 0.5);
+            // Sea Surface Temperature: Calibrated realistic Tasman Sea (-41°S) -> ~14°C to 16°C
+            // Equator ~28°C to 30°C, Arctic ~ -1.5°C to 2°C
+            const tempCurve = -1.8 + 31.0 * Math.pow(Math.max(0, cosLat), 1.1);
+            const anomalyNoise = fbm(lon / 40, lat / 30, 3, seed + 50) * 1.8;
+            val = Math.max(-1.8, Math.min(32.0, tempCurve + anomalyNoise));
             break;
           }
           case 'waves': {
-            // Roaring Forties & North Pacific swell
-            const swellBelt = Math.exp(-Math.pow((lat + 50) / 18, 2)) * 0.6;
-            const northSwell = Math.exp(-Math.pow((lat - 50) / 15, 2)) * 0.4;
-            const noise = fbm(lon / 35, lat / 30, 4, layerSeed);
-            normalizedVal = Math.max(0, Math.min(1, swellBelt + northSwell + noise * 0.3));
+            // Significant wave height: roaring 40s/50s in Southern Ocean have highest waves (4m - 9m)
+            const southernSwell = Math.exp(-Math.pow((lat + 52) / 15, 2)) * 5.5;
+            const noise = (fbm(lon / 35, lat / 30, 3, seed + 60) + 1) * 0.5;
+            val = 0.8 + southernSwell + noise * 2.5;
             break;
           }
           case 'currents': {
-            // Ocean gyres & Gulf Stream
-            const noise = fbm(lon / 30, lat / 25, 4, layerSeed);
-            normalizedVal = Math.max(0, Math.min(1, noise * 0.5 + 0.3));
-
-            if (uComponent && vComponent) {
-              const cu = fbm(lon / 25, lat / 25, 3, layerSeed + 30);
-              const cv = fbm(lon / 25, lat / 25, 3, layerSeed + 40);
-              uComponent[idx] = cu * 1.5;
-              vComponent[idx] = cv * 1.0;
+            // Ocean currents (m/s): Boundary currents (Gulf Stream, Kuroshio) up to 1.8 m/s
+            const noise = (fbm(lon / 30, lat / 25, 4, seed + 70) + 1) * 0.5;
+            val = 0.1 + noise * 1.2;
+            if (uComp && vComp) {
+              uComp[idx] = fbm(lon / 25, lat / 25, 3, seed + 80) * 1.4;
+              vComp[idx] = fbm(lon / 25, lat / 25, 3, seed + 90) * 0.9;
             }
             break;
           }
           default:
-            normalizedVal = 0.5;
+            val = (rMin + rMax) / 2;
         }
 
-        scalar[idx] = rangeMin + Math.max(0, Math.min(1, normalizedVal)) * (rangeMax - rangeMin);
+        scalar[idx] = Math.max(rMin, Math.min(rMax, val));
       }
     }
 
@@ -210,17 +194,18 @@ export class MockDataProvider implements DataProvider {
       W: GRID_W,
       H: GRID_H,
       scalar,
-      u: uComponent,
-      v: vComponent,
-      mask,
+      u: uComp,
+      v: vComp,
+      mask: isOcean ? mask : new Uint8Array(GRID_W * GRID_H).fill(1),
       timeIso,
     };
 
-    this.gridCache.set(cacheKey, field);
+    this.cache.set(key, field);
     return field;
   }
 
   async getPointReport(lat: number, lon: number, timeIso: string): Promise<PointReport> {
+    const geo = reverseGeocode(lat, lon);
     const layerIds: LayerId[] = [
       'temperature',
       'anomaly',
@@ -231,77 +216,87 @@ export class MockDataProvider implements DataProvider {
       'currents',
     ];
 
-    const reports: PointLayerReport[] = [];
+    const layers: PointLayerReport[] = [];
 
     for (const lid of layerIds) {
-      const field = await this.getGridField(lid, timeIso);
       const def = LAYER_REGISTRY[lid];
-      const sampledVal = bilinearSample(field.scalar, field.W, field.H, lat, lon);
+      const field = await this.getGridField(lid, timeIso);
+      const sampled = bilinearSample(field.scalar, field.W, field.H, lat, lon);
 
-      // Deterministic seed derived from coordinate and layer
-      const pointSeed = Math.abs(Math.floor(lat * 1000 + lon * 100 + lid.charCodeAt(0)));
-      const rng = createSeededRng(pointSeed);
+      // Coordinate-derived seed for reproducibility
+      const ptSeed = Math.abs(Math.floor(lat * 3141 + lon * 2718 + lid.charCodeAt(0) * 11));
+      const rng = createSeededRng(ptSeed);
 
       const [rMin, rMax] = def.range;
-      const fallbackMid = (rMin + rMax) / 2;
-      const currentVal = Number.isFinite(sampledVal) ? sampledVal : fallbackMid;
+      const currentVal = Number.isFinite(sampled)
+        ? parseFloat(sampled.toFixed(2))
+        : parseFloat(((rMin + rMax) / 2).toFixed(2));
 
-      // 30-day historical trend
+      // 30-day consistent series
       const trend30: number[] = [];
       let walk = currentVal;
-      const volatility = (rMax - rMin) * 0.03;
+      const stepMagnitude = (rMax - rMin) * 0.02;
 
       for (let d = 29; d >= 0; d--) {
-        const step = (rng() - 0.48) * volatility;
+        const step = (rng() - 0.49) * stepMagnitude;
         walk = Math.max(rMin, Math.min(rMax, walk + step));
         trend30.unshift(parseFloat(walk.toFixed(2)));
       }
 
-      // 12 monthly climatological averages
+      // Climatological 12-month baseline
       const climatology: number[] = [];
-      const seasonalAmp = (rMax - rMin) * 0.15 * (lat >= 0 ? 1 : -1);
+      const seasonalOffset = (rMax - rMin) * 0.18 * (lat >= 0 ? 1 : -1);
 
       for (let m = 0; m < 12; m++) {
-        const seasonOffset = Math.sin(((m - 3) / 12) * Math.PI * 2) * seasonalAmp;
-        const climVal = fallbackMid + seasonOffset + (rng() - 0.5) * volatility;
-        climatology.push(parseFloat(climVal.toFixed(2)));
+        const season = Math.sin(((m - 3) / 12) * Math.PI * 2) * seasonalOffset;
+        const baseline = currentVal - (trend30[29] - trend30[0]) * 0.2 + season;
+        climatology.push(parseFloat(Math.max(rMin, Math.min(rMax, baseline)).toFixed(2)));
       }
 
       const climMean = mean(climatology);
-      const climStd = Math.max(0.2, stdDev(climatology));
-      const anomalyVal = computeAnomaly(currentVal, climMean);
-      const zScore = computeZScore(currentVal, climMean, climStd);
-      const percentile = computePercentileRank(currentVal, trend30);
+      const climStd = Math.max(0.4, stdDev(climatology));
 
-      // Monthly standardized anomalies
-      const anomalyMonthly = climatology.map((c) =>
-        parseFloat((computeAnomaly(currentVal, c)).toFixed(2))
-      );
+      // Coherent Anomaly and Z-Score from the same statistical model
+      const anomalyVal = parseFloat(computeAnomaly(currentVal, climMean).toFixed(2));
+      const zScoreVal = parseFloat(computeZScore(currentVal, climMean, climStd).toFixed(2));
+      const percentileVal = computePercentileRank(currentVal, trend30);
 
-      // Factor breakdown
-      const factors: FactorEntry[] = [
-        { name: 'Atmospheric Circulation', zScore: parseFloat((zScore * 0.45).toFixed(2)) },
-        { name: 'Surface Radiation Balance', zScore: parseFloat((zScore * 0.28).toFixed(2)) },
-        { name: 'Ocean-Atmosphere Coupling', zScore: parseFloat((zScore * -0.18).toFixed(2)) },
-        { name: 'Topographical Forcing', zScore: parseFloat((zScore * 0.09).toFixed(2)) },
-      ].sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
+      // Signed monthly anomalies
+      const anomalyMonthly = climatology.map((c) => parseFloat((currentVal - c).toFixed(2)));
+
+      // Context-aware factor breakdown
+      const factors: FactorEntry[] = geo.isOcean
+        ? [
+            { name: 'Marine Boundary Layer Advection', zScore: parseFloat((zScoreVal * 0.42).toFixed(2)) },
+            { name: 'Upper Ocean Heat Flux', zScore: parseFloat((zScoreVal * 0.31).toFixed(2)) },
+            { name: 'Geostrophic Current Shear', zScore: parseFloat((zScoreVal * -0.19).toFixed(2)) },
+            { name: 'Baroclinic Instability', zScore: parseFloat((zScoreVal * 0.08).toFixed(2)) },
+          ]
+        : [
+            { name: 'Synoptic Frontal Passage', zScore: parseFloat((zScoreVal * 0.45).toFixed(2)) },
+            { name: 'Surface Albedo Radiative Forcing', zScore: parseFloat((zScoreVal * 0.29).toFixed(2)) },
+            { name: 'Orographic Moisture Uplift', zScore: parseFloat((zScoreVal * -0.16).toFixed(2)) },
+            { name: 'Planetary Boundary Layer Mixing', zScore: parseFloat((zScoreVal * 0.1).toFixed(2)) },
+          ];
+
+      factors.sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
 
       const { recordLengthYears } = olsTrendPerDecade(trend30);
 
-      reports.push({
+      layers.push({
         layerId: lid,
-        value: parseFloat(currentVal.toFixed(2)),
+        value: currentVal,
         unit: def.unit,
-        anomaly: parseFloat(anomalyVal.toFixed(2)),
-        zScore: parseFloat(zScore.toFixed(2)),
-        percentile,
+        anomaly: anomalyVal,
+        zScore: zScoreVal,
+        percentile: percentileVal,
         trend30DaySeries: trend30,
         climatologyMonthlySeries: climatology,
         anomalyMonthlySeries: anomalyMonthly,
         factorBreakdown: factors,
         climatologyMean: parseFloat(climMean.toFixed(2)),
         climatologyStd: parseFloat(climStd.toFixed(2)),
-        recordLengthYears: Math.max(10, Math.round(recordLengthYears || 10)),
+        recordLengthYears: Math.max(15, Math.round(recordLengthYears || 15)),
       });
     }
 
@@ -309,8 +304,8 @@ export class MockDataProvider implements DataProvider {
       lat: parseFloat(lat.toFixed(4)),
       lon: parseFloat(lon.toFixed(4)),
       timeIso,
-      placeName: reverseGeocode(lat, lon),
-      layers: reports,
+      placeName: geo.placeName,
+      layers,
       source: 'mock',
       fetchedAt: new Date().toISOString(),
     };
