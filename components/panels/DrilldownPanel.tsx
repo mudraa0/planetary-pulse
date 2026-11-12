@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useExplorerStore } from '@/store/useExplorerStore';
 import { usePointReport } from '@/hooks/usePointReport';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { DotPattern } from '@/components/ui/dot-pattern';
+import { BorderBeam } from '@/components/ui/border-beam';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
 import { TrendChart } from './TrendChart';
@@ -12,9 +14,10 @@ import { FactorBreakdown } from './FactorBreakdown';
 import { SourceFootnote } from './SourceFootnote';
 import { PanelState } from './PanelState';
 import { LAYER_REGISTRY } from '@/lib/layers';
-import { X, MapPin } from 'lucide-react';
+import { X, MapPin, Download } from 'lucide-react';
 
 export function DrilldownPanel() {
+  const [range, setRange] = useState<'30d' | '12m' | '5y'>('30d');
   const probe = useExplorerStore((s) => s.probe);
   const activeLayer = useExplorerStore((s) => s.activeLayer);
   const timeIso = useExplorerStore((s) => s.timeIso);
@@ -50,6 +53,7 @@ export function DrilldownPanel() {
         transition: reducedMotion ? 'none' : 'transform var(--motion-base), opacity var(--motion-base)',
       }}
     >
+      <BorderBeam size={250} duration={12} delay={9} colorFrom="var(--accent-primary)" colorTo="var(--accent-ocean)" />
       {/* Sticky Header with non-overlapping close button */}
       <div
         style={{
@@ -265,12 +269,106 @@ export function DrilldownPanel() {
             )}
           </div>
 
-          {/* Historical Trend Chart */}
-          <TrendChart
-            trend30Day={activeLayerData.trend30DaySeries}
-            climatologyMonthly={activeLayerData.climatologyMonthlySeries}
-            unit={activeDef.unit}
-          />
+          {/* Plain-Language Diagnostic Summary */}
+          <div
+            style={{
+              padding: '0.625rem 0.75rem',
+              backgroundColor: 'var(--surface-sunken)',
+              border: '1px solid var(--border-hairline)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.6875rem',
+              fontFamily: 'monospace',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.4,
+            }}
+          >
+            The local {activeDef.label.toLowerCase()} is {activeLayerData.value}{activeDef.unit}, which is{' '}
+            <strong style={{ color: activeLayerData.anomaly >= 0 ? 'var(--div-pos-2)' : 'var(--div-neg-2)' }}>
+              {Math.abs(activeLayerData.anomaly).toFixed(1)}{activeDef.unit}{' '}
+              {activeLayerData.anomaly >= 0 ? 'above' : 'below'}
+            </strong>{' '}
+            the historical baseline. This reading places the coordinate in the{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>{activeLayerData.percentile}th percentile</strong>{' '}
+            globally for this period.
+          </div>
+
+          {/* Historical Trend Chart Header with Range Selector & CSV Export */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                {(['30d', '12m', '5y'] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRange(r)}
+                    style={{
+                      padding: '2px 8px',
+                      fontSize: '0.625rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      backgroundColor: range === r ? 'var(--accent-primary)' : 'var(--surface-sunken)',
+                      color: range === r ? 'var(--surface-sunken)' : 'var(--text-secondary)',
+                      border: '1px solid var(--border-hairline)',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const csvHeader = `Date/Offset,Value (${activeDef.unit})\n`;
+                  const csvRows =
+                    range === '12m'
+                      ? activeLayerData.climatologyMonthlySeries.map((v, i) => `Month-${i + 1},${v}`).join('\n')
+                      : activeLayerData.trend30DaySeries.map((v, i) => `Day-${i + 1},${v}`).join('\n');
+                  const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${activeLayer}_${probe?.lat}_${probe?.lon}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  fontSize: '0.625rem',
+                  fontFamily: 'monospace',
+                  backgroundColor: 'var(--surface-sunken)',
+                  border: '1px solid var(--border-hairline)',
+                  color: 'var(--text-secondary)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                }}
+                title="Export Series as CSV"
+              >
+                <Download size={11} />
+                <span>CSV</span>
+              </button>
+            </div>
+
+            <TrendChart
+              trend30Day={activeLayerData.trend30DaySeries}
+              climatologyMonthly={activeLayerData.climatologyMonthlySeries}
+              unit={activeDef.unit}
+              range={range}
+              baseline={activeLayerData.climatologyMean}
+            />
+          </div>
 
           {/* Monthly Signed Anomaly Bars */}
           <AnomalyBars

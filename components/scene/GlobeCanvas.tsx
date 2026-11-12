@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Canvas } from '@react-three/fiber';
 import { Globe } from './Globe';
 import { Atmosphere } from './Atmosphere';
@@ -10,8 +11,20 @@ import { ParticleField } from './ParticleField';
 import { ProbeMarker } from './ProbeMarker';
 import { PointerPicker } from './PointerPicker';
 import { CameraRig } from './CameraRig';
+import { Coastlines } from './Coastlines';
+import { Graticule } from './Graticule';
+import { DebugOverlay } from '@/components/debug/DebugOverlay';
+import { GlobeControls } from '@/components/hud/GlobeControls';
 import { useExplorerStore } from '@/store/useExplorerStore';
 import { tokenToColor, observeThemeChanges } from '@/lib/colormap';
+
+function DebugWrapper() {
+  const searchParams = useSearchParams();
+  if (searchParams.get('debug') === '1') {
+    return <DebugOverlay />;
+  }
+  return null;
+}
 
 export function GlobeCanvas() {
   const setMode = useExplorerStore((s) => s.setMode);
@@ -56,6 +69,10 @@ export function GlobeCanvas() {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <Suspense fallback={null}>
+        <DebugWrapper />
+      </Suspense>
+      <GlobeControls />
       <Canvas
         dpr={[1, 2]}
         camera={{ fov: 45, near: 0.1, far: 100, position: [0, 0, 3.2] }}
@@ -78,6 +95,8 @@ export function GlobeCanvas() {
           <directionalLight position={[4, 3, 5]} intensity={1.1} />
           <Starfield />
           <Globe />
+          <Coastlines />
+          <Graticule />
           <Atmosphere />
           <LayerManager />
           <ParticleField />

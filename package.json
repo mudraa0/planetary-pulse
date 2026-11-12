@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "textures": "node scripts/fetch-textures.mjs"
+    "textures": "node scripts/fetch-textures.mjs",
+    "geo": "node scripts/fetch-geo.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

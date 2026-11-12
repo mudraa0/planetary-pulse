@@ -29,9 +29,55 @@ export function CameraRig() {
   const closePanel = useExplorerStore((s) => s.closePanel);
 
   const flyStateRef = useRef<FlyState | null>(null);
+  const manualAutoRotateRef = useRef<boolean>(false);
   const lastInteractionTimeRef = useRef<number>(performance.now());
   const zoomDerivedProbeRef = useRef<boolean>(false);
   const zoomDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleZoomIn = () => {
+      const dir = camera.position.clone().normalize();
+      const dist = Math.max(1.3, camera.position.length() * 0.85);
+      camera.position.copy(dir.multiplyScalar(dist));
+      controlsRef.current?.update();
+      invalidate();
+    };
+
+    const handleZoomOut = () => {
+      const dir = camera.position.clone().normalize();
+      const dist = Math.min(6.0, camera.position.length() * 1.18);
+      camera.position.copy(dir.multiplyScalar(dist));
+      controlsRef.current?.update();
+      invalidate();
+    };
+
+    const handleReset = () => {
+      camera.position.set(0, 0, 3.2);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
+      invalidate();
+    };
+
+    const handleAutoRotate = (e: Event) => {
+      const { enabled } = (e as CustomEvent<{ enabled: boolean }>).detail;
+      manualAutoRotateRef.current = enabled;
+      invalidate();
+    };
+
+    window.addEventListener('globe:zoomIn', handleZoomIn);
+    window.addEventListener('globe:zoomOut', handleZoomOut);
+    window.addEventListener('globe:reset', handleReset);
+    window.addEventListener('globe:autoRotate', handleAutoRotate);
+
+    return () => {
+      window.removeEventListener('globe:zoomIn', handleZoomIn);
+      window.removeEventListener('globe:zoomOut', handleZoomOut);
+      window.removeEventListener('globe:reset', handleReset);
+      window.removeEventListener('globe:autoRotate', handleAutoRotate);
+    };
+  }, [camera, invalidate]);
 
   useEffect(() => {
     if (!probe) return;
@@ -114,9 +160,10 @@ export function CameraRig() {
     }
 
     const isIdle = now - lastInteractionTimeRef.current > 6000;
-    if (isIdle && !reducedMotion && !panelOpen) {
+    const shouldRotate = manualAutoRotateRef.current || (isIdle && !reducedMotion && !panelOpen);
+    if (shouldRotate) {
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.35;
+      controls.autoRotateSpeed = manualAutoRotateRef.current ? 0.8 : 0.35;
       controls.update();
       invalidate();
     } else {

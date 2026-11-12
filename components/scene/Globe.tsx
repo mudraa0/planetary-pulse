@@ -98,6 +98,8 @@ export function Globe() {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
       tex.colorSpace = THREE.SRGBColorSpace;
+      tex.generateMipmaps = true;
+      tex.anisotropy = 8;
     });
   }, [albedoTex, normalTex, specTex]);
 
@@ -190,12 +192,21 @@ export function Globe() {
       }
     };
 
+    const handleWireframe = (e: Event) => {
+      const { wireframe } = (e as CustomEvent<{ wireframe: boolean }>).detail;
+      if (materialRef.current) {
+        materialRef.current.wireframe = wireframe;
+      }
+    };
+
     window.addEventListener('globe:setLayerSlot', handleSetSlot);
     window.addEventListener('globe:setMix', handleSetMix);
+    window.addEventListener('globe:debugWireframe', handleWireframe);
 
     return () => {
       window.removeEventListener('globe:setLayerSlot', handleSetSlot);
       window.removeEventListener('globe:setMix', handleSetMix);
+      window.removeEventListener('globe:debugWireframe', handleWireframe);
     };
   }, []);
 

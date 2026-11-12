@@ -33,12 +33,13 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
   },
 
   setLayer: (l: LayerId) => {
+    const isVector = l === 'wind' || l === 'currents';
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('layer', l);
       window.history.replaceState({}, '', url.toString());
     }
-    set({ activeLayer: l });
+    set({ activeLayer: l, particlesOn: isVector });
   },
 
   setProbe: (p: Probe | null) => {

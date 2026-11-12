@@ -11,6 +11,8 @@ export interface LayerDef {
   mask: 'none' | 'ocean';
   vector: boolean;
   accentToken: string;
+  description: string;
+  source: string;
 }
 
 export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
@@ -25,6 +27,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'none',
     vector: false,
     accentToken: '--accent-temp',
+    description: 'Near-surface 2-meter air temperature calibrated against global reanalysis grids.',
+    source: 'ERA5 Reanalysis / GFS Blend',
   },
   anomaly: {
     id: 'anomaly',
@@ -37,6 +41,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'none',
     vector: false,
     accentToken: '--accent-temp',
+    description: 'Departure from 1991–2020 climatological baseline normal for the target period.',
+    source: 'NASA GISTEMP / ERA5 Climatology',
   },
   aqi: {
     id: 'aqi',
@@ -49,6 +55,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'none',
     vector: false,
     accentToken: '--accent-air',
+    description: 'Composite atmospheric air quality index driven by PM2.5 and aerosol optical depth.',
+    source: 'Copernicus CAMS & Ground Stations',
   },
   wind: {
     id: 'wind',
@@ -61,6 +69,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'none',
     vector: true,
     accentToken: '--accent-air',
+    description: '10-meter atmospheric wind velocity field with particle vector streamlines.',
+    source: 'NOAA GFS / ECMWF Vector',
   },
   sst: {
     id: 'sst',
@@ -73,6 +83,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'ocean',
     vector: false,
     accentToken: '--accent-ocean',
+    description: 'Sub-skin sea surface thermal measurements masked strictly to oceanic water basins.',
+    source: 'NOAA OISST v2.1 High-Res',
   },
   waves: {
     id: 'waves',
@@ -85,6 +97,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'ocean',
     vector: false,
     accentToken: '--accent-ocean',
+    description: 'Significant wave height reflecting combined wind waves and ocean swell systems.',
+    source: 'WAVEWATCH III Marine Model',
   },
   currents: {
     id: 'currents',
@@ -97,6 +111,8 @@ export const LAYER_REGISTRY: Record<LayerId, LayerDef> = {
     mask: 'ocean',
     vector: true,
     accentToken: '--accent-ocean',
+    description: 'Upper-layer oceanic circulation velocity field with geostrophic kinetic streamlines.',
+    source: 'HYCOM / OSCAR Altimetry',
   },
 };
 

@@ -4,8 +4,25 @@ import { useState, useEffect } from 'react';
 import { useExplorerStore } from '@/store/useExplorerStore';
 import { LAYER_REGISTRY } from '@/lib/layers';
 import { bilinearSample } from '@/lib/sampling';
+import { GEOGRAPHIC_ANCHORS } from '@/services/mock/MockDataProvider';
 import type { GridField } from '@/types/data';
 import type { LayerId } from '@/types/layers';
+import { MapPin } from 'lucide-react';
+
+function getNearestAnchor(lat: number, lon: number): string | null {
+  let nearest = null;
+  let minDist = 7.0; // max threshold in degrees
+  for (const a of GEOGRAPHIC_ANCHORS) {
+    const dLat = a.lat - lat;
+    const dLon = a.lon - lon;
+    const dist = Math.sqrt(dLat * dLat + dLon * dLon);
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = a.name.split(',')[0];
+    }
+  }
+  return nearest;
+}
 
 export function CursorReadout() {
   const activeLayer = useExplorerStore((s) => s.activeLayer);
@@ -68,6 +85,7 @@ export function CursorReadout() {
 
   const latHem = hoverState.lat >= 0 ? `${hoverState.lat.toFixed(2)}°N` : `${Math.abs(hoverState.lat).toFixed(2)}°S`;
   const lonHem = hoverState.lon >= 0 ? `${hoverState.lon.toFixed(2)}°E` : `${Math.abs(hoverState.lon).toFixed(2)}°W`;
+  const anchorName = getNearestAnchor(hoverState.lat, hoverState.lon);
 
   return (
     <div
@@ -75,15 +93,26 @@ export function CursorReadout() {
         backgroundColor: 'var(--surface-raised)',
         border: '1px solid var(--border-hairline)',
         borderRadius: 'var(--radius-sm)',
-        padding: '0.5rem 0.875rem',
+        padding: '0.45rem 0.875rem',
         display: 'flex',
         alignItems: 'center',
         gap: '0.75rem',
         fontSize: '0.75rem',
         fontFamily: 'monospace',
         userSelect: 'none',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
       }}
     >
+      {anchorName && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
+            <MapPin size={12} />
+            <span>{anchorName}</span>
+          </div>
+          <div style={{ width: '1px', height: '12px', backgroundColor: 'var(--border-hairline)' }} />
+        </>
+      )}
+
       <div style={{ color: 'var(--text-secondary)' }}>
         {latHem}, {lonHem}
       </div>

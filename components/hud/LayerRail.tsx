@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useExplorerStore } from '@/store/useExplorerStore';
 import { LAYER_REGISTRY } from '@/lib/layers';
 import type { LayerId, Domain } from '@/types/layers';
@@ -11,6 +12,9 @@ import {
   Compass,
   Activity,
   Layers,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from 'lucide-react';
 
 const DOMAIN_SECTIONS: {
@@ -46,6 +50,9 @@ export function LayerRail() {
   const activeLayer = useExplorerStore((s) => s.activeLayer);
   const setLayer = useExplorerStore((s) => s.setLayer);
   const setDomain = useExplorerStore((s) => s.setDomain);
+  const [aboutOpen, setAboutOpen] = useState(true);
+
+  const activeDef = LAYER_REGISTRY[activeLayer];
 
   return (
     <aside
@@ -138,6 +145,72 @@ export function LayerRail() {
           </div>
         );
       })}
+
+      {/* Collapsible About This Layer Card */}
+      <div
+        style={{
+          marginTop: 'auto',
+          backgroundColor: 'var(--surface-sunken)',
+          border: '1px solid var(--border-hairline)',
+          borderRadius: 'var(--radius-sm)',
+          overflow: 'hidden',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setAboutOpen(!aboutOpen)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '7px 9px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            fontSize: '0.6875rem',
+            fontFamily: 'monospace',
+            fontWeight: 600,
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <Info size={12} color="var(--accent-primary)" />
+            <span>ABOUT LAYER</span>
+          </div>
+          {aboutOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
+
+        {aboutOpen && (
+          <div
+            style={{
+              padding: '0 9px 9px 9px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.375rem',
+              fontSize: '0.6875rem',
+              fontFamily: 'monospace',
+              color: 'var(--text-muted)',
+              lineHeight: 1.35,
+            }}
+          >
+            <div style={{ color: 'var(--text-secondary)' }}>{activeDef.description}</div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                paddingTop: '0.25rem',
+                borderTop: '1px solid var(--border-hairline)',
+                fontSize: '0.625rem',
+              }}
+            >
+              <span>SOURCE:</span>
+              <span style={{ color: 'var(--text-primary)' }}>{activeDef.source}</span>
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

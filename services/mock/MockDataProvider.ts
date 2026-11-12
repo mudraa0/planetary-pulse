@@ -60,6 +60,35 @@ function reverseGeocode(lat: number, lon: number): { placeName: string; isOcean:
   return { placeName: `Observation Point (${latHem}, ${lonHem})`, isOcean };
 }
 
+function isOceanCoordinate(lat: number, lon: number): boolean {
+  // Polar ice shelves
+  if (lat < -78) return false; // Antarctica
+  if (lat > 84) return true; // Arctic ocean
+
+  // Known ocean anchors override
+  for (const anchor of GEOGRAPHIC_ANCHORS) {
+    if (anchor.isOcean) {
+      const dLat = anchor.lat - lat;
+      const dLon = anchor.lon - lon;
+      if (Math.sqrt(dLat * dLat + dLon * dLon) < 8.0) return true;
+    }
+  }
+
+  // Major continental bounding approximations
+  // North America
+  if (lat > 15 && lat < 72 && lon > -168 && lon < -52) return false;
+  // South America
+  if (lat > -56 && lat <= 15 && lon > -82 && lon < -34) return false;
+  // Eurasia
+  if (lat > 35 && lat < 78 && lon > -10 && lon < 170) return false;
+  // Africa
+  if (lat > -35 && lat <= 35 && lon > -18 && lon < 52) return false;
+  // Australia
+  if (lat > -40 && lat < -10 && lon > 112 && lon < 154) return false;
+
+  return true;
+}
+
 /** Precomputed ocean mask (1 = ocean, 0 = land). */
 const oceanMask = new Uint8Array(GRID_W * GRID_H);
 let isMaskReady = false;
@@ -70,10 +99,7 @@ function getOceanMask(): Uint8Array {
     const lat = 90 - (j / (GRID_H - 1)) * 180;
     for (let i = 0; i < GRID_W; i++) {
       const lon = -180 + (i / GRID_W) * 360;
-      // High-resolution continental coastline approximation
-      const c = fbm(lon / 55 + 2.5, lat / 40 + 1.2, 5, 108);
-      const isLand = c > 0.08 && Math.abs(lat) < 78;
-      oceanMask[j * GRID_W + i] = isLand ? 0 : 1;
+      oceanMask[j * GRID_W + i] = isOceanCoordinate(lat, lon) ? 1 : 0;
     }
   }
   isMaskReady = true;
@@ -101,6 +127,7 @@ export class MockDataProvider implements DataProvider {
 
     const [rMin, rMax] = def.range;
     const seed = layerId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 42);
+    const month = new Date(timeIso).getUTCMonth(); // 0-11
 
     for (let j = 0; j < GRID_H; j++) {
       const lat = 90 - (j / (GRID_H - 1)) * 180;
@@ -124,10 +151,11 @@ export class MockDataProvider implements DataProvider {
 
         switch (layerId) {
           case 'temperature': {
-            // Realistic atmospheric global temperature gradient: -50°C polar to +35°C tropical
+            // Realistic atmospheric global temperature gradient: -50°C polar to +35°C tropical + seasonal shift
             const baseTemp = -45 + 75 * Math.pow(Math.max(0, cosLat), 0.9);
-            const noise = fbm(lon / 50, lat / 35, 4, seed) * 8.0;
-            val = baseTemp + noise;
+            const seasonal = Math.sin(((month - 3) / 12) * Math.PI * 2) * (lat >= 0 ? 8.5 : -8.5) * Math.abs(Math.sin(latRad));
+            const noise = fbm(lon / 50, lat / 35, 4, seed) * 7.0;
+            val = baseTemp + seasonal + noise;
             break;
           }
           case 'anomaly': {
@@ -157,18 +185,35 @@ export class MockDataProvider implements DataProvider {
             break;
           }
           case 'sst': {
-            // Sea Surface Temperature: Calibrated realistic Tasman Sea (-41°S) -> ~14°C to 16°C
-            // Equator ~28°C to 30°C, Arctic ~ -1.5°C to 2°C
-            const tempCurve = -1.8 + 31.0 * Math.pow(Math.max(0, cosLat), 1.1);
-            const anomalyNoise = fbm(lon / 40, lat / 30, 3, seed + 50) * 1.8;
-            val = Math.max(-1.8, Math.min(32.0, tempCurve + anomalyNoise));
+            // Sea Surface Temperature: Calibrated realistic
+            // Equator (lat 0) -> 27°C - 30°C
+            // Tasman Sea (-41°S) -> 13°C - 16°C
+            // Southern Ocean (-56°S) -> -1.0°C - 2.5°C
+            // Gulf Stream (lat 34, lon -65) -> 22°C - 27°C
+            const latFactor = Math.pow(Math.max(0, cosLat), 2.2);
+            let tempBase = -1.8 + 31.0 * latFactor;
+
+            // Gulf Stream warm boundary current boost
+            if (lat > 25 && lat < 45 && lon > -80 && lon < -50) {
+              tempBase += 4.5;
+            }
+
+            // High southern latitude polar cooling
+            if (lat < -50) {
+              tempBase = Math.min(2.5, tempBase * 0.4);
+            }
+
+            const anomalyNoise = fbm(lon / 40, lat / 30, 3, seed + 50) * 1.2;
+            val = Math.max(-1.8, Math.min(32.0, tempBase + anomalyNoise));
             break;
           }
           case 'waves': {
-            // Significant wave height: roaring 40s/50s in Southern Ocean have highest waves (4m - 9m)
-            const southernSwell = Math.exp(-Math.pow((lat + 52) / 15, 2)) * 5.5;
+            // Significant wave height: roaring 40s/50s in Southern Ocean have highest waves (4m - 7.5m)
+            // Mid-latitudes (Tasman Sea): 2.0m - 4.5m
+            const southernSwell = Math.exp(-Math.pow((lat + 55) / 10, 2)) * 4.6;
+            const midSwell = Math.exp(-Math.pow((Math.abs(lat) - 42) / 14, 2)) * 1.6;
             const noise = (fbm(lon / 35, lat / 30, 3, seed + 60) + 1) * 0.5;
-            val = 0.8 + southernSwell + noise * 2.5;
+            val = 0.8 + southernSwell + midSwell + noise * 0.8;
             break;
           }
           case 'currents': {
@@ -242,6 +287,7 @@ export class MockDataProvider implements DataProvider {
         walk = Math.max(rMin, Math.min(rMax, walk + step));
         trend30.unshift(parseFloat(walk.toFixed(2)));
       }
+      trend30[29] = currentVal;
 
       // Climatological 12-month baseline
       const climatology: number[] = [];

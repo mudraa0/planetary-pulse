@@ -12,6 +12,7 @@ import {
   Pause,
   Database,
   Share2,
+  HelpCircle,
 } from 'lucide-react';
 
 export function TopBar() {
@@ -327,6 +328,30 @@ export function TopBar() {
         >
           <Share2 size={12} />
           <span>{copied ? 'COPIED!' : 'SHARE'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
+          }}
+          style={{
+            padding: '5px 8px',
+            fontSize: '0.6875rem',
+            fontFamily: 'monospace',
+            backgroundColor: 'var(--surface-sunken)',
+            border: '1px solid var(--border-hairline)',
+            color: 'var(--text-secondary)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+          }}
+          title="Keyboard Shortcuts (?)"
+          aria-label="Keyboard Shortcuts"
+        >
+          <HelpCircle size={13} />
         </button>
 
         <ModeSwitch />
