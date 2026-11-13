@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Minus, RotateCcw, Play, Pause, Sparkles } from 'lucide-react';
+import { Plus, Minus, RotateCcw, Play, Pause, Sparkles, Flame, History, GitCompare } from 'lucide-react';
 import { useExplorerStore } from '@/store/useExplorerStore';
 
 export function GlobeControls() {
   const particlesOn = useExplorerStore((s) => s.particlesOn);
   const setParticlesOn = useExplorerStore((s) => s.setParticlesOn);
+  const firesVisible = useExplorerStore((s) => s.firesVisible);
+  const setFiresVisible = useExplorerStore((s) => s.setFiresVisible);
+  const historicalMode = useExplorerStore((s) => s.historicalMode);
+  const setHistoricalMode = useExplorerStore((s) => s.setHistoricalMode);
+  const comparisonMode = useExplorerStore((s) => s.comparisonMode);
+  const setComparisonMode = useExplorerStore((s) => s.setComparisonMode);
   const [autoRotate, setAutoRotate] = useState(false);
 
   const handleZoomIn = () => {
@@ -110,6 +116,51 @@ export function GlobeControls() {
         aria-label="Toggle Streamlines"
       >
         <Sparkles size={15} />
+      </button>
+
+      {/* NASA FIRMS Active Wildfires Layer Toggle */}
+      <button
+        type="button"
+        onClick={() => setFiresVisible(!firesVisible)}
+        style={{
+          ...buttonStyle,
+          color: firesVisible ? '#ef4444' : 'var(--text-muted)',
+          borderColor: firesVisible ? '#ef4444' : 'var(--border-hairline)',
+        }}
+        title="NASA FIRMS Active Fire Hotspots"
+        aria-label="NASA FIRMS Active Fire Hotspots"
+      >
+        <Flame size={15} />
+      </button>
+
+      {/* Earth Through Time Historical Mode Toggle */}
+      <button
+        type="button"
+        onClick={() => setHistoricalMode(!historicalMode)}
+        style={{
+          ...buttonStyle,
+          color: historicalMode ? 'var(--accent-primary)' : 'var(--text-muted)',
+          borderColor: historicalMode ? 'var(--accent-primary)' : 'var(--border-hairline)',
+        }}
+        title="Earth Through Time (1880 - Present)"
+        aria-label="Earth Through Time"
+      >
+        <History size={15} />
+      </button>
+
+      {/* Location Comparison Mode Toggle */}
+      <button
+        type="button"
+        onClick={() => setComparisonMode(!comparisonMode)}
+        style={{
+          ...buttonStyle,
+          color: comparisonMode ? 'var(--accent-ocean)' : 'var(--text-muted)',
+          borderColor: comparisonMode ? 'var(--accent-ocean)' : 'var(--border-hairline)',
+        }}
+        title="Compare Environmental Locations"
+        aria-label="Compare Environmental Locations"
+      >
+        <GitCompare size={15} />
       </button>
     </div>
   );

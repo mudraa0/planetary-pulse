@@ -12,6 +12,11 @@ export interface ExplorerState {
   domain: Domain;
   activeLayer: LayerId;
   particlesOn: boolean;
+  firesVisible: boolean;
+  historicalMode: boolean;
+  selectedYear: number;
+  comparisonMode: boolean;
+  compareProbe: Probe | null;
   timeIso: string;
   probe: Probe | null;
   panelOpen: boolean;
@@ -20,6 +25,11 @@ export interface ExplorerState {
   setDomain: (d: Domain) => void;
   setLayer: (l: LayerId) => void;
   setProbe: (p: Probe | null) => void;
+  setCompareProbe: (p: Probe | null) => void;
+  setComparisonMode: (enabled: boolean) => void;
+  setHistoricalMode: (enabled: boolean) => void;
+  setSelectedYear: (year: number) => void;
+  setFiresVisible: (visible: boolean) => void;
   setTime: (iso: string) => void;
   closePanel: () => void;
   setParticlesOn: (on: boolean) => void;

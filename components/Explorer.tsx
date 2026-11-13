@@ -10,6 +10,8 @@ import { Legend } from '@/components/hud/Legend';
 import { CursorReadout } from '@/components/hud/CursorReadout';
 import { DrilldownPanel } from '@/components/panels/DrilldownPanel';
 import { HelpDialog } from '@/components/hud/HelpDialog';
+import { HistoricalTimeline } from '@/components/hud/HistoricalTimeline';
+import { LocationComparisonModal } from '@/components/hud/LocationComparisonModal';
 import type { LayerId } from '@/types/layers';
 import { MousePointerClick, X } from 'lucide-react';
 
@@ -232,11 +234,17 @@ export function Explorer() {
                 </button>
               </div>
             )}
+
+            {/* Earth Through Time Historical Timeline Controller */}
+            <HistoricalTimeline />
           </main>
 
           {/* Right Drill-down Dashboard */}
           {panelOpen && <DrilldownPanel />}
         </div>
+
+        {/* Location Comparison Modal */}
+        <LocationComparisonModal />
 
         {/* Keyboard Shortcuts Dialog */}
         <HelpDialog isOpen={helpOpen} onClose={() => setHelpOpen(false)} />

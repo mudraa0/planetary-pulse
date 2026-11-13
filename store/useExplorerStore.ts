@@ -8,6 +8,11 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
   domain: 'atmosphere',
   activeLayer: 'temperature',
   particlesOn: true,
+  firesVisible: false,
+  historicalMode: false,
+  selectedYear: 2026,
+  comparisonMode: false,
+  compareProbe: null,
   timeIso: '2026-10-01T12:00:00.000Z',
   probe: null,
   panelOpen: false,
@@ -56,6 +61,16 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
     }
     set({ probe: p, panelOpen: p !== null });
   },
+
+  setCompareProbe: (p: Probe | null) => set({ compareProbe: p }),
+
+  setComparisonMode: (enabled: boolean) => set({ comparisonMode: enabled }),
+
+  setHistoricalMode: (enabled: boolean) => set({ historicalMode: enabled }),
+
+  setSelectedYear: (year: number) => set({ selectedYear: year }),
+
+  setFiresVisible: (visible: boolean) => set({ firesVisible: visible }),
 
   setTime: (iso: string) => {
     if (typeof window !== 'undefined') {

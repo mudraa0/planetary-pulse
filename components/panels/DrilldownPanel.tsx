@@ -13,6 +13,7 @@ import { AnomalyBars } from './AnomalyBars';
 import { FactorBreakdown } from './FactorBreakdown';
 import { SourceFootnote } from './SourceFootnote';
 import { PanelState } from './PanelState';
+import { EnvironmentalMetrics } from './EnvironmentalMetrics';
 import { LAYER_REGISTRY } from '@/lib/layers';
 import { X, MapPin, Download } from 'lucide-react';
 
@@ -378,6 +379,9 @@ export function DrilldownPanel() {
 
           {/* Factor Breakdown */}
           <FactorBreakdown factors={activeLayerData.factorBreakdown} />
+
+          {/* Real-time Environmental Chemistry Metrics (Open-Meteo & Ground Stations) */}
+          {probe && <EnvironmentalMetrics lat={probe.lat} lon={probe.lon} />}
 
           {/* Footnote & Provenance */}
           <SourceFootnote

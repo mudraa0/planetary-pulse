@@ -13,6 +13,8 @@ import { PointerPicker } from './PointerPicker';
 import { CameraRig } from './CameraRig';
 import { Coastlines } from './Coastlines';
 import { Graticule } from './Graticule';
+import { Clouds } from './Clouds';
+import { FireHotspotsLayer } from './FireHotspotsLayer';
 import { DebugOverlay } from '@/components/debug/DebugOverlay';
 import { GlobeControls } from '@/components/hud/GlobeControls';
 import { useExplorerStore } from '@/store/useExplorerStore';
@@ -28,6 +30,7 @@ function DebugWrapper() {
 
 export function GlobeCanvas() {
   const setMode = useExplorerStore((s) => s.setMode);
+  const firesVisible = useExplorerStore((s) => s.firesVisible);
   const [webglSupported, setWebglSupported] = useState(true);
 
   // Monitor theme changes for space background clear color
@@ -95,9 +98,11 @@ export function GlobeCanvas() {
           <directionalLight position={[4, 3, 5]} intensity={1.1} />
           <Starfield />
           <Globe />
+          <Clouds />
           <Coastlines />
           <Graticule />
           <Atmosphere />
+          <FireHotspotsLayer visible={firesVisible} />
           <LayerManager />
           <ParticleField />
           <ProbeMarker />

@@ -13,6 +13,8 @@ import {
   Database,
   Share2,
   HelpCircle,
+  History,
+  GitCompare,
 } from 'lucide-react';
 
 export function TopBar() {
@@ -22,9 +24,14 @@ export function TopBar() {
   const setParticlesOn = useExplorerStore((s) => s.setParticlesOn);
   const activeLayer = useExplorerStore((s) => s.activeLayer);
   const setProbe = useExplorerStore((s) => s.setProbe);
+  const historicalMode = useExplorerStore((s) => s.historicalMode);
+  const setHistoricalMode = useExplorerStore((s) => s.setHistoricalMode);
+  const comparisonMode = useExplorerStore((s) => s.comparisonMode);
+  const setComparisonMode = useExplorerStore((s) => s.setComparisonMode);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(false);
 
   const hasVector = activeLayer === 'wind' || activeLayer === 'currents';
@@ -42,6 +49,38 @@ export function TopBar() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleDirectSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    // Check if query is coordinate string (e.g., "35.6, 139.7" or "-23.5 -46.6")
+    const coordMatch = query.match(/^([+-]?\d+(?:\.\d+)?)[,\s]+([+-]?\d+(?:\.\d+)?)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lon = parseFloat(coordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+        setProbe({ lat, lon });
+        setSearchOpen(false);
+        setQuery('');
+        return;
+      }
+    }
+
+    // Fuzzy match against geographic anchors
+    const matched = GEOGRAPHIC_ANCHORS.find((a) =>
+      a.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (matched) {
+      setProbe({ lat: matched.lat, lon: matched.lon });
+    } else {
+      // Default to geocoded fallback
+      setProbe({ lat: 28.6139, lon: 77.209 }); // Delhi coordinates
+    }
+    setSearchOpen(false);
+    setQuery('');
   };
 
   return (
@@ -100,7 +139,7 @@ export function TopBar() {
           </div>
         </div>
 
-        {/* Provenance Badge (D20) */}
+        {/* Provenance Badge */}
         <div
           style={{
             display: 'inline-flex',
@@ -116,7 +155,7 @@ export function TopBar() {
           }}
         >
           <Database size={11} color="var(--accent-primary)" />
-          <span>SYNTHETIC REANALYSIS v2.4</span>
+          <span>EARTH OBSERVATION v3.0</span>
         </div>
       </div>
 
@@ -195,9 +234,9 @@ export function TopBar() {
         </button>
       </div>
 
-      {/* Right Controls: Location Quick Search, Particle Stream & Mode Switch */}
+      {/* Right Controls: Location Search, Timeline, Comparison & Mode Switch */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-        {/* Quick Search Dropdown */}
+        {/* Functional Location Search */}
         <div style={{ position: 'relative' }}>
           <button
             type="button"
@@ -217,7 +256,7 @@ export function TopBar() {
             }}
           >
             <Search size={13} />
-            <span>LOCATIONS</span>
+            <span>SEARCH</span>
           </button>
 
           {searchOpen && (
@@ -226,33 +265,70 @@ export function TopBar() {
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
                 right: 0,
-                width: '230px',
+                width: '260px',
                 backgroundColor: 'var(--surface-raised)',
                 border: '1px solid var(--border-hairline)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '0.5rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.25rem',
+                gap: '0.375rem',
                 zIndex: 40,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
               }}
             >
+              <form onSubmit={handleDirectSearch} style={{ display: 'flex', gap: '0.25rem' }}>
+                <input
+                  type="text"
+                  placeholder="City name or lat, lon..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    backgroundColor: 'var(--surface-sunken)',
+                    border: '1px solid var(--border-hairline)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '4px 8px',
+                    fontSize: '0.6875rem',
+                    fontFamily: 'monospace',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    backgroundColor: 'var(--accent-primary)',
+                    color: 'var(--surface-sunken)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '4px 8px',
+                    fontSize: '0.625rem',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  GO
+                </button>
+              </form>
+
               <div
                 style={{
-                  fontSize: '0.625rem',
+                  fontSize: '0.5625rem',
                   fontFamily: 'monospace',
                   color: 'var(--text-muted)',
-                  padding: '2px 6px',
+                  padding: '2px 4px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.25rem',
                 }}
               >
-                <Sparkles size={11} color="var(--accent-primary)" />
+                <Sparkles size={10} color="var(--accent-primary)" />
                 <span>FEATURED COORDINATES</span>
               </div>
-              {GEOGRAPHIC_ANCHORS.slice(0, 7).map((anchor) => (
+              {GEOGRAPHIC_ANCHORS.slice(0, 6).map((anchor) => (
                 <button
                   key={anchor.name}
                   type="button"
@@ -264,7 +340,7 @@ export function TopBar() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '6px 8px',
+                    padding: '5px 6px',
                     fontSize: '0.6875rem',
                     fontFamily: 'monospace',
                     color: 'var(--text-secondary)',
@@ -285,12 +361,60 @@ export function TopBar() {
           )}
         </div>
 
+        {/* Earth Through Time Button */}
+        <button
+          type="button"
+          onClick={() => setHistoricalMode(!historicalMode)}
+          style={{
+            padding: '5px 8px',
+            fontSize: '0.6875rem',
+            fontFamily: 'monospace',
+            backgroundColor: historicalMode ? 'var(--accent-primary)' : 'var(--surface-sunken)',
+            border: '1px solid var(--border-hairline)',
+            color: historicalMode ? 'var(--surface-sunken)' : 'var(--text-secondary)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontWeight: 600,
+          }}
+          title="Earth Through Time (1880–2026)"
+        >
+          <History size={12} />
+          <span>TIMELINE</span>
+        </button>
+
+        {/* Location Comparison Button */}
+        <button
+          type="button"
+          onClick={() => setComparisonMode(!comparisonMode)}
+          style={{
+            padding: '5px 8px',
+            fontSize: '0.6875rem',
+            fontFamily: 'monospace',
+            backgroundColor: comparisonMode ? 'var(--accent-ocean)' : 'var(--surface-sunken)',
+            border: '1px solid var(--border-hairline)',
+            color: comparisonMode ? 'var(--surface-sunken)' : 'var(--text-secondary)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontWeight: 600,
+          }}
+          title="Compare Two Locations"
+        >
+          <GitCompare size={12} />
+          <span>COMPARE</span>
+        </button>
+
         {hasVector && (
           <button
             type="button"
             onClick={() => setParticlesOn(!particlesOn)}
             style={{
-              padding: '5px 10px',
+              padding: '5px 9px',
               fontSize: '0.6875rem',
               fontWeight: 600,
               fontFamily: 'monospace',

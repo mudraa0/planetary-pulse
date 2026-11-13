@@ -9,12 +9,14 @@ const GLOBE_VERTEX = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewDir;
+  varying vec3 vWorldPosition;
 
   void main() {
     vUv = uv;
     vNormal = normalize(normalMatrix * normal);
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     vViewDir = normalize(-mvPosition.xyz);
+    vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -33,10 +35,12 @@ const GLOBE_FRAGMENT = /* glsl */ `
   uniform vec2 uRangeB;
   uniform float uMix;
   uniform float uOpacity;
+  uniform vec3 uSunDirection;
 
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewDir;
+  varying vec3 vWorldPosition;
 
   void main() {
     // Wrap-safe UV coordinate for seamless antimeridian sampling
@@ -44,19 +48,28 @@ const GLOBE_FRAGMENT = /* glsl */ `
 
     // Base satellite Earth texture
     vec4 albedo = texture2D(uAlbedo, safeUv);
-    vec3 normalSample = texture2D(uNormalMap, safeUv).rgb * 2.0 - 1.0;
     float oceanSpec = texture2D(uSpecularMap, safeUv).r;
 
-    // Direct and ambient lighting with soft day/night terminator
-    vec3 lightDir = normalize(vec3(4.5, 2.0, 3.5));
+    // Solar lighting with realistic day-to-night terminator
+    vec3 lightDir = normalize(uSunDirection);
     float nDotL = dot(vNormal, lightDir);
-    float diffuse = clamp(nDotL * 0.7 + 0.35, 0.2, 1.0);
+    
+    // Day illumination with smooth terminator falloff
+    float dayFactor = smoothstep(-0.15, 0.25, nDotL);
+    float diffuse = clamp(nDotL * 0.75 + 0.25, 0.08, 1.0);
 
-    // Specular sunlight reflection on water surfaces
+    // Specular ocean reflection in direct sunlight
     vec3 halfVector = normalize(lightDir + vViewDir);
-    float spec = pow(max(dot(vNormal, halfVector), 0.0), 32.0) * oceanSpec * 0.65;
+    float spec = pow(max(dot(vNormal, halfVector), 0.0), 32.0) * oceanSpec * 0.65 * dayFactor;
 
-    vec3 surfaceColor = albedo.rgb * diffuse + vec3(spec);
+    // Realistic night hemisphere city lights (warm amber glow on landmasses in darkness)
+    float nightFactor = 1.0 - dayFactor;
+    float isLand = 1.0 - oceanSpec;
+    // Generate organic night light distribution based on land albedo patterns
+    float cityLights = pow(albedo.r * 1.4, 3.0) * isLand * nightFactor;
+    vec3 nightColor = vec3(1.0, 0.82, 0.45) * cityLights * 1.2;
+
+    vec3 surfaceColor = (albedo.rgb * diffuse + vec3(spec)) * dayFactor + nightColor + (albedo.rgb * 0.06 * nightFactor);
 
     // Sample data layers with bilinear half-float texture lookup
     float maskA = texture2D(uMaskA, safeUv).r;
@@ -154,6 +167,7 @@ export function Globe() {
       uRangeB: { value: new THREE.Vector2(-50, 50) },
       uMix: { value: 0 },
       uOpacity: { value: 0.72 },
+      uSunDirection: { value: new THREE.Vector3(4.5, 2.0, 3.5).normalize() },
     };
   }, [albedoTex, normalTex, specTex, defaultTex, defaultMask, defaultLut]);
 
