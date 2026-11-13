@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Minus, RotateCcw, Play, Pause, Sparkles, Flame, History, GitCompare } from 'lucide-react';
+import { Plus, Minus, RotateCcw, Play, Pause, Sparkles, Flame, History, GitCompare, SatelliteDish } from 'lucide-react';
 import { useExplorerStore } from '@/store/useExplorerStore';
 
 export function GlobeControls() {
@@ -13,7 +12,12 @@ export function GlobeControls() {
   const setHistoricalMode = useExplorerStore((s) => s.setHistoricalMode);
   const comparisonMode = useExplorerStore((s) => s.comparisonMode);
   const setComparisonMode = useExplorerStore((s) => s.setComparisonMode);
-  const [autoRotate, setAutoRotate] = useState(false);
+  const satelliteMode = useExplorerStore((s) => s.satelliteMode);
+  const setSatelliteMode = useExplorerStore((s) => s.setSatelliteMode);
+  const autoRotate = useExplorerStore((s) => s.autoRotate);
+  const setAutoRotate = useExplorerStore((s) => s.setAutoRotate);
+  const rotationSpeed = useExplorerStore((s) => s.rotationSpeed);
+  const setRotationSpeed = useExplorerStore((s) => s.setRotationSpeed);
 
   const handleZoomIn = () => {
     window.dispatchEvent(new CustomEvent('globe:zoomIn'));
@@ -28,9 +32,13 @@ export function GlobeControls() {
   };
 
   const handleAutoRotate = () => {
-    const next = !autoRotate;
-    setAutoRotate(next);
-    window.dispatchEvent(new CustomEvent('globe:autoRotate', { detail: { enabled: next } }));
+    setAutoRotate(!autoRotate);
+  };
+
+  const cycleSpeed = () => {
+    if (rotationSpeed <= 0.35) setRotationSpeed(0.8);
+    else if (rotationSpeed <= 0.8) setRotationSpeed(1.8);
+    else setRotationSpeed(0.35);
   };
 
   const buttonStyle = {
@@ -98,11 +106,29 @@ export function GlobeControls() {
           color: autoRotate ? 'var(--accent-primary)' : 'var(--text-secondary)',
           borderColor: autoRotate ? 'var(--accent-primary)' : 'var(--border-hairline)',
         }}
-        title="Auto-Rotate Globe"
+        title="Auto-Rotate Globe (Space)"
         aria-label="Auto-Rotate Globe"
       >
         {autoRotate ? <Pause size={15} /> : <Play size={15} />}
       </button>
+
+      {autoRotate && (
+        <button
+          type="button"
+          onClick={cycleSpeed}
+          style={{
+            ...buttonStyle,
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            color: 'var(--accent-primary)',
+          }}
+          title={`Rotation Speed: ${rotationSpeed} (Click to cycle 0.35x / 0.8x / 1.8x)`}
+          aria-label="Cycle Rotation Speed"
+        >
+          {rotationSpeed <= 0.35 ? '0.3x' : rotationSpeed <= 0.8 ? '0.8x' : '1.8x'}
+        </button>
+      )}
 
       <button
         type="button"
@@ -161,6 +187,22 @@ export function GlobeControls() {
         aria-label="Compare Environmental Locations"
       >
         <GitCompare size={15} />
+      </button>
+
+      {/* Satellite Tracking Mode Toggle */}
+      <button
+        type="button"
+        onClick={() => setSatelliteMode(!satelliteMode)}
+        style={{
+          ...buttonStyle,
+          color: satelliteMode ? '#c084fc' : 'var(--text-muted)',
+          borderColor: satelliteMode ? '#c084fc' : 'var(--border-hairline)',
+          backgroundColor: satelliteMode ? 'rgba(192,132,252,0.1)' : 'var(--surface-raised)',
+        }}
+        title="Satellite Tracking Mode — Live orbital positions"
+        aria-label="Toggle Satellite Tracking Mode"
+      >
+        <SatelliteDish size={15} />
       </button>
     </div>
   );

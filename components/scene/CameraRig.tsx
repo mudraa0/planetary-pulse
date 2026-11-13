@@ -27,9 +27,11 @@ export function CameraRig() {
   const panelOpen = useExplorerStore((s) => s.panelOpen);
   const setProbe = useExplorerStore((s) => s.setProbe);
   const closePanel = useExplorerStore((s) => s.closePanel);
+  const autoRotate = useExplorerStore((s) => s.autoRotate);
+  const rotationSpeed = useExplorerStore((s) => s.rotationSpeed);
 
   const flyStateRef = useRef<FlyState | null>(null);
-  const manualAutoRotateRef = useRef<boolean>(false);
+  const isInteractingRef = useRef<boolean>(false);
   const lastInteractionTimeRef = useRef<number>(performance.now());
   const zoomDerivedProbeRef = useRef<boolean>(false);
   const zoomDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,22 +62,14 @@ export function CameraRig() {
       invalidate();
     };
 
-    const handleAutoRotate = (e: Event) => {
-      const { enabled } = (e as CustomEvent<{ enabled: boolean }>).detail;
-      manualAutoRotateRef.current = enabled;
-      invalidate();
-    };
-
     window.addEventListener('globe:zoomIn', handleZoomIn);
     window.addEventListener('globe:zoomOut', handleZoomOut);
     window.addEventListener('globe:reset', handleReset);
-    window.addEventListener('globe:autoRotate', handleAutoRotate);
 
     return () => {
       window.removeEventListener('globe:zoomIn', handleZoomIn);
       window.removeEventListener('globe:zoomOut', handleZoomOut);
       window.removeEventListener('globe:reset', handleReset);
-      window.removeEventListener('globe:autoRotate', handleAutoRotate);
     };
   }, [camera, invalidate]);
 
@@ -159,11 +153,13 @@ export function CameraRig() {
       closePanel();
     }
 
-    const isIdle = now - lastInteractionTimeRef.current > 6000;
-    const shouldRotate = manualAutoRotateRef.current || (isIdle && !reducedMotion && !panelOpen);
+    const idleDuration = now - lastInteractionTimeRef.current;
+    const isInteracting = isInteractingRef.current;
+    const shouldRotate = autoRotate && !isInteracting && idleDuration > 1500 && !reducedMotion && !panelOpen;
+
     if (shouldRotate) {
       controls.autoRotate = true;
-      controls.autoRotateSpeed = manualAutoRotateRef.current ? 0.8 : 0.35;
+      controls.autoRotateSpeed = rotationSpeed;
       controls.update();
       invalidate();
     } else {
@@ -171,11 +167,23 @@ export function CameraRig() {
     }
   });
 
-  const onUserInteraction = () => {
+  const onInteractionStart = () => {
+    isInteractingRef.current = true;
     lastInteractionTimeRef.current = performance.now();
     if (flyStateRef.current) {
       flyStateRef.current = null;
     }
+    invalidate();
+  };
+
+  const onInteractionChange = () => {
+    lastInteractionTimeRef.current = performance.now();
+    invalidate();
+  };
+
+  const onInteractionEnd = () => {
+    isInteractingRef.current = false;
+    lastInteractionTimeRef.current = performance.now();
     invalidate();
   };
 
@@ -187,8 +195,9 @@ export function CameraRig() {
       maxDistance={6.0}
       enableDamping
       dampingFactor={0.06}
-      onStart={onUserInteraction}
-      onChange={onUserInteraction}
+      onStart={onInteractionStart}
+      onChange={onInteractionChange}
+      onEnd={onInteractionEnd}
     />
   );
 }

@@ -15,8 +15,12 @@ import { Coastlines } from './Coastlines';
 import { Graticule } from './Graticule';
 import { Clouds } from './Clouds';
 import { FireHotspotsLayer } from './FireHotspotsLayer';
+import { SatelliteLayer } from './SatelliteLayer';
+import { OrbitalTrail } from './OrbitalTrail';
 import { DebugOverlay } from '@/components/debug/DebugOverlay';
 import { GlobeControls } from '@/components/hud/GlobeControls';
+import { SatelliteInfoPanel } from '@/components/panels/SatelliteInfoPanel';
+import { SatelliteSearch } from '@/components/hud/SatelliteSearch';
 import { useExplorerStore } from '@/store/useExplorerStore';
 import { tokenToColor, observeThemeChanges } from '@/lib/colormap';
 
@@ -31,9 +35,11 @@ function DebugWrapper() {
 export function GlobeCanvas() {
   const setMode = useExplorerStore((s) => s.setMode);
   const firesVisible = useExplorerStore((s) => s.firesVisible);
+  const satelliteMode = useExplorerStore((s) => s.satelliteMode);
+  const autoRotate = useExplorerStore((s) => s.autoRotate);
+  const selectedSatellite = useExplorerStore((s) => s.selectedSatellite);
   const [webglSupported, setWebglSupported] = useState(true);
 
-  // Monitor theme changes for space background clear color
   useEffect(() => {
     const checkWebGL = () => {
       try {
@@ -48,7 +54,6 @@ export function GlobeCanvas() {
   }, []);
 
   if (!webglSupported) {
-    // Graceful automatic fallback to 2D flat map mode per Section 4.5
     setMode('2d');
     return (
       <div
@@ -76,6 +81,17 @@ export function GlobeCanvas() {
         <DebugWrapper />
       </Suspense>
       <GlobeControls />
+      {/* Satellite UI overlays */}
+      {satelliteMode && (
+        <Suspense fallback={null}>
+          <SatelliteSearch />
+        </Suspense>
+      )}
+      {selectedSatellite && (
+        <Suspense fallback={null}>
+          <SatelliteInfoPanel />
+        </Suspense>
+      )}
       <Canvas
         dpr={[1, 2]}
         camera={{ fov: 45, near: 0.1, far: 100, position: [0, 0, 3.2] }}
@@ -84,7 +100,7 @@ export function GlobeCanvas() {
           alpha: false,
           powerPreference: 'high-performance',
         }}
-        frameloop="demand"
+        frameloop={satelliteMode || autoRotate ? 'always' : 'demand'}
         onCreated={({ gl }) => {
           gl.setClearColor(spaceColor);
           observeThemeChanges(() => {
@@ -107,6 +123,8 @@ export function GlobeCanvas() {
           <ParticleField />
           <ProbeMarker />
           <PointerPicker />
+          <SatelliteLayer />
+          <OrbitalTrail />
           <CameraRig />
         </Suspense>
       </Canvas>

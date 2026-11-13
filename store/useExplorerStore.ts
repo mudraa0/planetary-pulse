@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ExplorerState, Mode, Probe } from '@/types/store';
 import type { LayerId, Domain } from '@/types/layers';
+import type { TLERecord, SatelliteCategory } from '@/types/satellites';
 import { DOMAIN_DEFAULT_LAYER } from '@/lib/layers';
 
 export const useExplorerStore = create<ExplorerState>((set) => ({
@@ -17,6 +18,17 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
   probe: null,
   panelOpen: false,
   quality: 'high',
+
+  // Earth rotation defaults
+  autoRotate: true,
+  rotationSpeed: 0.35,
+
+  // Satellite tracking defaults
+  satelliteMode: false,
+  selectedSatellite: null,
+  satelliteCategory: 'all',
+  satelliteTrailsVisible: true,
+  followSatellite: false,
 
   setMode: (m: Mode) => {
     if (typeof window !== 'undefined') {
@@ -94,4 +106,14 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
   setParticlesOn: (on: boolean) => set({ particlesOn: on }),
 
   setQuality: (q: 'high' | 'low') => set({ quality: q }),
+
+  setAutoRotate: (enabled: boolean) => set({ autoRotate: enabled }),
+  setRotationSpeed: (speed: number) => set({ rotationSpeed: speed }),
+
+  // Satellite setters
+  setSatelliteMode: (enabled: boolean) => set({ satelliteMode: enabled }),
+  setSelectedSatellite: (sat: TLERecord | null) => set({ selectedSatellite: sat }),
+  setSatelliteCategory: (cat: SatelliteCategory | 'all') => set({ satelliteCategory: cat }),
+  setSatelliteTrailsVisible: (visible: boolean) => set({ satelliteTrailsVisible: visible }),
+  setFollowSatellite: (follow: boolean) => set({ followSatellite: follow }),
 }));
