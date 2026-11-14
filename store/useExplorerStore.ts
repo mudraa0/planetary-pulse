@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import type { ExplorerState, Mode, Probe } from '@/types/store';
 import type { LayerId, Domain } from '@/types/layers';
 import type { TLERecord, SatelliteCategory } from '@/types/satellites';
+import type { SWOTWaterBody } from '@/types/swot';
+import type { DisasterEvent } from '@/types/disasters';
+import type { SARSceneMetadata } from '@/types/radar';
+import type { GeoCaDatasetEntry } from '@/types/coastal-geoca';
 import { DOMAIN_DEFAULT_LAYER } from '@/lib/layers';
 
 export const useExplorerStore = create<ExplorerState>((set) => ({
@@ -30,6 +34,16 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
   satelliteTrailsVisible: true,
   followSatellite: false,
 
+  // Earth Intelligence Modules defaults
+  swotWaterVisible: false,
+  disastersVisible: false,
+  radarVisible: false,
+  geocaVisible: false,
+  selectedWaterBody: null,
+  selectedDisasterEvent: null,
+  selectedRadarScene: null,
+  selectedGeoCaDataset: null,
+
   setMode: (m: Mode) => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -56,7 +70,14 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
       url.searchParams.set('layer', l);
       window.history.replaceState({}, '', url.toString());
     }
-    set({ activeLayer: l, particlesOn: isVector });
+    set({
+      activeLayer: l,
+      particlesOn: isVector,
+      swotWaterVisible: l === 'swot_water' || l === 'lakes_reservoirs' || l === 'rivers',
+      disastersVisible: l === 'wildfires' || l === 'floods' || l === 'landslides' || l === 'cyclones' || l === 'recovery',
+      radarVisible: l === 'sar_observations',
+      geocaVisible: l === 'geoca_canada',
+    });
   },
 
   setProbe: (p: Probe | null) => {
@@ -116,4 +137,14 @@ export const useExplorerStore = create<ExplorerState>((set) => ({
   setSatelliteCategory: (cat: SatelliteCategory | 'all') => set({ satelliteCategory: cat }),
   setSatelliteTrailsVisible: (visible: boolean) => set({ satelliteTrailsVisible: visible }),
   setFollowSatellite: (follow: boolean) => set({ followSatellite: follow }),
+
+  // Earth Intelligence setters
+  setSwotWaterVisible: (visible: boolean) => set({ swotWaterVisible: visible }),
+  setDisastersVisible: (visible: boolean) => set({ disastersVisible: visible }),
+  setRadarVisible: (visible: boolean) => set({ radarVisible: visible }),
+  setGeocaVisible: (visible: boolean) => set({ geocaVisible: visible }),
+  setSelectedWaterBody: (body: SWOTWaterBody | null) => set({ selectedWaterBody: body }),
+  setSelectedDisasterEvent: (event: DisasterEvent | null) => set({ selectedDisasterEvent: event }),
+  setSelectedRadarScene: (scene: SARSceneMetadata | null) => set({ selectedRadarScene: scene }),
+  setSelectedGeoCaDataset: (entry: GeoCaDatasetEntry | null) => set({ selectedGeoCaDataset: entry }),
 }));

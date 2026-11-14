@@ -18,6 +18,10 @@
   --accent-temp: #f97316;
   --accent-ocean: #0ea5e9;
   --accent-air: #10b981;
+  --accent-water: #06b6d4;
+  --accent-eco: #22c55e;
+  --accent-disaster: #ef4444;
+  --accent-radar: #a855f7;
   --state-warning: #f59e0b;
   --state-danger: #ef4444;
   --state-positive: #10b981;
@@ -35,6 +39,13 @@
   --div-zero: #94a3b8;
   --div-pos-1: #f87171;
   --div-pos-2: #dc2626;
+
+  /* Vegetation NDVI Ramp - Low/Bare Soil to Dense Canopy */
+  --ramp-veg-1: #e2e8f0;
+  --ramp-veg-2: #facc15;
+  --ramp-veg-3: #4ade80;
+  --ramp-veg-4: #16a34a;
+  --ramp-veg-5: #14532d;
 
   /* Chart Series */
   --series-1: #38bdf8;

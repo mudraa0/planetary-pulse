@@ -1,6 +1,8 @@
-// Satellite state additions for Zustand store
-
 import type { TLERecord, SatelliteCategory } from './satellites';
+import type { SWOTWaterBody } from './swot';
+import type { DisasterEvent } from './disasters';
+import type { SARSceneMetadata } from './radar';
+import type { GeoCaDatasetEntry } from './coastal-geoca';
 
 export type Mode = '3d' | '2d';
 
@@ -35,6 +37,16 @@ export interface ExplorerState {
   satelliteTrailsVisible: boolean;
   followSatellite: boolean;
 
+  // Earth Intelligence Modules
+  swotWaterVisible: boolean;
+  disastersVisible: boolean;
+  radarVisible: boolean;
+  geocaVisible: boolean;
+  selectedWaterBody: SWOTWaterBody | null;
+  selectedDisasterEvent: DisasterEvent | null;
+  selectedRadarScene: SARSceneMetadata | null;
+  selectedGeoCaDataset: GeoCaDatasetEntry | null;
+
   setMode: (m: Mode) => void;
   setDomain: (d: import('./layers').Domain) => void;
   setLayer: (l: import('./layers').LayerId) => void;
@@ -57,4 +69,14 @@ export interface ExplorerState {
   setSatelliteCategory: (cat: SatelliteCategory | 'all') => void;
   setSatelliteTrailsVisible: (visible: boolean) => void;
   setFollowSatellite: (follow: boolean) => void;
+
+  // Earth Intelligence setters
+  setSwotWaterVisible: (visible: boolean) => void;
+  setDisastersVisible: (visible: boolean) => void;
+  setRadarVisible: (visible: boolean) => void;
+  setGeocaVisible: (visible: boolean) => void;
+  setSelectedWaterBody: (body: SWOTWaterBody | null) => void;
+  setSelectedDisasterEvent: (event: DisasterEvent | null) => void;
+  setSelectedRadarScene: (scene: SARSceneMetadata | null) => void;
+  setSelectedGeoCaDataset: (entry: GeoCaDatasetEntry | null) => void;
 }

@@ -226,6 +226,133 @@ export class MockDataProvider implements DataProvider {
             }
             break;
           }
+          case 'aerosols': {
+            // Sahara dust corridor (lat 10-30N) and East Asian industrial plumes
+            const dustPlume = lat > 10 && lat < 30 && lon > -30 && lon < 50 ? 0.6 : 0.05;
+            const noise = (fbm(lon / 25, lat / 20, 3, seed + 100) + 1) * 0.5;
+            val = dustPlume + noise * 0.55;
+            break;
+          }
+          case 'humidity': {
+            // Tropical ITCZ high humidity (>75%), subtropical deserts low (<35%)
+            const itcz = Math.exp(-Math.pow(lat / 12, 2)) * 35;
+            const maritime = mask[idx] === 1 ? 25 : 10;
+            const noise = (fbm(lon / 35, lat / 25, 3, seed + 110) + 1) * 0.5;
+            val = 30 + itcz + maritime + noise * 20;
+            break;
+          }
+          case 'ndvi': {
+            // Vegetation NDVI: Tropical rainforests ~0.8-0.88, deserts <0.12, boreal ~0.55
+            const isContinent = mask[idx] === 0;
+            if (!isContinent) {
+              val = 0.02; // Ocean phytoplankton baseline
+            } else {
+              const tropicalForest = Math.exp(-Math.pow(lat / 12, 2)) * 0.5;
+              const desertBelt = (lat > 15 && lat < 35 && lon > -15 && lon < 60) ? -0.4 : 0.0;
+              const noise = (fbm(lon / 30, lat / 25, 4, seed + 120) + 1) * 0.5;
+              val = Math.max(0.05, 0.25 + tropicalForest + desertBelt + noise * 0.35);
+            }
+            break;
+          }
+          case 'agriculture': {
+            const noise = (fbm(lon / 30, lat / 20, 3, seed + 130) + 1) * 0.5;
+            val = mask[idx] === 0 ? 35 + noise * 50 : 0;
+            break;
+          }
+          case 'soil_moisture': {
+            // SMAP Volumetric Soil Moisture m³/m³ (0.05 to 0.45)
+            const noise = (fbm(lon / 25, lat / 20, 3, seed + 140) + 1) * 0.5;
+            val = mask[idx] === 0 ? 0.08 + noise * 0.32 : 0.45;
+            break;
+          }
+          case 'forestry': {
+            // Canopy Height (meters): Amazon, Congo, Pacific NW up to 55m
+            const isContinent = mask[idx] === 0;
+            if (!isContinent) {
+              val = 0;
+            } else {
+              const equatorial = Math.exp(-Math.pow(lat / 14, 2)) * 32;
+              const noise = (fbm(lon / 25, lat / 25, 4, seed + 150) + 1) * 0.5;
+              val = 8 + equatorial + noise * 18;
+            }
+            break;
+          }
+          case 'wetlands': {
+            const noise = (fbm(lon / 20, lat / 20, 4, seed + 160) + 1) * 0.5;
+            val = mask[idx] === 0 ? noise * 85 : 100;
+            break;
+          }
+          case 'coastal_change': {
+            const noise = fbm(lon / 15, lat / 15, 3, seed + 170) * 3.2;
+            val = noise;
+            break;
+          }
+          case 'swot_water': {
+            // SWOT surface water elevation (m relative to EGM2008 geoid)
+            const noise = (fbm(lon / 35, lat / 30, 4, seed + 180) + 1) * 0.5;
+            val = mask[idx] === 1 ? (noise * 2.5 - 1.0) : (150 + noise * 1200);
+            break;
+          }
+          case 'lakes_reservoirs': {
+            const noise = fbm(lon / 25, lat / 25, 3, seed + 190) * 650;
+            val = noise;
+            break;
+          }
+          case 'rivers': {
+            const noise = (fbm(lon / 20, lat / 20, 3, seed + 200) + 1) * 0.5;
+            val = noise * 45000;
+            break;
+          }
+          case 'wildfires': {
+            // FRP in MW
+            const noise = (fbm(lon / 20, lat / 20, 4, seed + 210) + 1) * 0.5;
+            val = mask[idx] === 0 ? Math.pow(noise, 2.5) * 1800 : 0;
+            break;
+          }
+          case 'floods': {
+            const noise = (fbm(lon / 20, lat / 20, 3, seed + 220) + 1) * 0.5;
+            val = noise * 5200;
+            break;
+          }
+          case 'landslides': {
+            // NASA LHASA risk index 0 to 4
+            const steepness = (fbm(lon / 15, lat / 15, 4, seed + 230) + 1) * 0.5;
+            val = mask[idx] === 0 ? steepness * 3.8 : 0;
+            break;
+          }
+          case 'cyclones': {
+            // Wind speed km/h in tropical storm belts
+            const tropicalBelt = Math.abs(lat) > 8 && Math.abs(lat) < 28 ? 60 : 15;
+            const noise = (fbm(lon / 25, lat / 25, 3, seed + 240) + 1) * 0.5;
+            val = tropicalBelt + noise * 140;
+            break;
+          }
+          case 'recovery': {
+            const noise = fbm(lon / 25, lat / 25, 3, seed + 250) * 50;
+            val = noise;
+            break;
+          }
+          case 'sar_observations': {
+            // Radar backscatter -25 to -5 dB
+            const noise = (fbm(lon / 20, lat / 20, 4, seed + 260) + 1) * 0.5;
+            val = -25 + noise * 18;
+            break;
+          }
+          case 'optical_imagery': {
+            const noise = (fbm(lon / 30, lat / 25, 4, seed + 270) + 1) * 0.5;
+            val = 0.08 + noise * 0.65;
+            break;
+          }
+          case 'geoca_canada': {
+            // Restrict to Canada (lat 41.6 to 83.1, lon -141.0 to -52.6)
+            if (lat >= 41.6 && lat <= 83.1 && lon >= -141.0 && lon <= -52.6) {
+              const noise = (fbm(lon / 15, lat / 15, 3, seed + 280) + 1) * 0.5;
+              val = 20 + noise * 75;
+            } else {
+              val = 0;
+            }
+            break;
+          }
           default:
             val = (rMin + rMax) / 2;
         }
@@ -251,15 +378,7 @@ export class MockDataProvider implements DataProvider {
 
   async getPointReport(lat: number, lon: number, timeIso: string): Promise<PointReport> {
     const geo = reverseGeocode(lat, lon);
-    const layerIds: LayerId[] = [
-      'temperature',
-      'anomaly',
-      'aqi',
-      'wind',
-      'sst',
-      'waves',
-      'currents',
-    ];
+    const layerIds = Object.keys(LAYER_REGISTRY) as LayerId[];
 
     const layers: PointLayerReport[] = [];
 

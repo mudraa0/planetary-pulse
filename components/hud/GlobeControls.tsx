@@ -1,6 +1,21 @@
 'use client';
 
-import { Plus, Minus, RotateCcw, Play, Pause, Sparkles, Flame, History, GitCompare, SatelliteDish } from 'lucide-react';
+import {
+  Plus,
+  Minus,
+  RotateCcw,
+  Play,
+  Pause,
+  Sparkles,
+  Flame,
+  History,
+  GitCompare,
+  SatelliteDish,
+  Droplets,
+  ShieldAlert,
+  Radar,
+  MapPin,
+} from 'lucide-react';
 import { useExplorerStore } from '@/store/useExplorerStore';
 
 export function GlobeControls() {
@@ -18,6 +33,16 @@ export function GlobeControls() {
   const setAutoRotate = useExplorerStore((s) => s.setAutoRotate);
   const rotationSpeed = useExplorerStore((s) => s.rotationSpeed);
   const setRotationSpeed = useExplorerStore((s) => s.setRotationSpeed);
+
+  // Earth Intelligence toggles
+  const swotWaterVisible = useExplorerStore((s) => s.swotWaterVisible);
+  const setSwotWaterVisible = useExplorerStore((s) => s.setSwotWaterVisible);
+  const disastersVisible = useExplorerStore((s) => s.disastersVisible);
+  const setDisastersVisible = useExplorerStore((s) => s.setDisastersVisible);
+  const radarVisible = useExplorerStore((s) => s.radarVisible);
+  const setRadarVisible = useExplorerStore((s) => s.setRadarVisible);
+  const geocaVisible = useExplorerStore((s) => s.geocaVisible);
+  const setGeocaVisible = useExplorerStore((s) => s.setGeocaVisible);
 
   const handleZoomIn = () => {
     window.dispatchEvent(new CustomEvent('globe:zoomIn'));
@@ -142,6 +167,70 @@ export function GlobeControls() {
         aria-label="Toggle Streamlines"
       >
         <Sparkles size={15} />
+      </button>
+
+      {/* NASA SWOT Water Intelligence Toggle */}
+      <button
+        type="button"
+        onClick={() => setSwotWaterVisible(!swotWaterVisible)}
+        style={{
+          ...buttonStyle,
+          color: swotWaterVisible ? 'var(--accent-water)' : 'var(--text-muted)',
+          borderColor: swotWaterVisible ? 'var(--accent-water)' : 'var(--border-hairline)',
+          backgroundColor: swotWaterVisible ? 'rgba(6,182,212,0.12)' : 'var(--surface-raised)',
+        }}
+        title="NASA SWOT Water Intelligence (Lakes, Reservoirs, Rivers)"
+        aria-label="NASA SWOT Water Intelligence"
+      >
+        <Droplets size={15} />
+      </button>
+
+      {/* NASA Disasters Program Toggle */}
+      <button
+        type="button"
+        onClick={() => setDisastersVisible(!disastersVisible)}
+        style={{
+          ...buttonStyle,
+          color: disastersVisible ? 'var(--accent-disaster)' : 'var(--text-muted)',
+          borderColor: disastersVisible ? 'var(--accent-disaster)' : 'var(--border-hairline)',
+          backgroundColor: disastersVisible ? 'rgba(239,68,68,0.12)' : 'var(--surface-raised)',
+        }}
+        title="NASA Disasters Intelligence (Wildfires, Floods, Landslides, Cyclones)"
+        aria-label="NASA Disasters Intelligence"
+      >
+        <ShieldAlert size={15} />
+      </button>
+
+      {/* Alaska Satellite Facility (ASF) SAR Radar Toggle */}
+      <button
+        type="button"
+        onClick={() => setRadarVisible(!radarVisible)}
+        style={{
+          ...buttonStyle,
+          color: radarVisible ? 'var(--accent-radar)' : 'var(--text-muted)',
+          borderColor: radarVisible ? 'var(--accent-radar)' : 'var(--border-hairline)',
+          backgroundColor: radarVisible ? 'rgba(168,85,247,0.12)' : 'var(--surface-raised)',
+        }}
+        title="Alaska Satellite Facility (ASF) Sentinel-1 SAR Radar Swaths"
+        aria-label="ASF SAR Radar Observations"
+      >
+        <Radar size={15} />
+      </button>
+
+      {/* Canadian Geo.ca Regional Geospatial Toggle */}
+      <button
+        type="button"
+        onClick={() => setGeocaVisible(!geocaVisible)}
+        style={{
+          ...buttonStyle,
+          color: geocaVisible ? '#ef4444' : 'var(--text-muted)',
+          borderColor: geocaVisible ? '#ef4444' : 'var(--border-hairline)',
+          backgroundColor: geocaVisible ? 'rgba(239,68,68,0.12)' : 'var(--surface-raised)',
+        }}
+        title="Geo.ca Canadian Geospatial Data (Flood Risk, Caribou, Permafrost)"
+        aria-label="Canadian Geo.ca Data"
+      >
+        <MapPin size={15} />
       </button>
 
       {/* NASA FIRMS Active Wildfires Layer Toggle */}
