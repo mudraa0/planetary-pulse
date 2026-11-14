@@ -1,4 +1,4 @@
-'use client';
+https://github.com/skhwahish24/planetary-pulse.git'use client';
 
 import { useMemo, useEffect, useRef } from 'react';
 import * as THREE from 'three';
