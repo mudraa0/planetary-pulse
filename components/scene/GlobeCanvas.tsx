@@ -23,14 +23,6 @@ import { RadarObservationLayer } from './RadarObservationLayer';
 import { GeoCaLayer } from './GeoCaLayer';
 
 import { DebugOverlay } from '@/components/debug/DebugOverlay';
-import { GlobeControls } from '@/components/hud/GlobeControls';
-import { SatelliteInfoPanel } from '@/components/panels/SatelliteInfoPanel';
-import { SatelliteSearch } from '@/components/hud/SatelliteSearch';
-import { WaterIntelligenceModal } from '@/components/panels/WaterIntelligenceModal';
-import { DisasterModal } from '@/components/panels/DisasterModal';
-import { RadarInspectorModal } from '@/components/panels/RadarInspectorModal';
-import { GeoCaModal } from '@/components/panels/GeoCaModal';
-
 import { useExplorerStore } from '@/store/useExplorerStore';
 import { tokenToColor, observeThemeChanges } from '@/lib/colormap';
 
@@ -47,17 +39,12 @@ export function GlobeCanvas() {
   const firesVisible = useExplorerStore((s) => s.firesVisible);
   const satelliteMode = useExplorerStore((s) => s.satelliteMode);
   const autoRotate = useExplorerStore((s) => s.autoRotate);
-  const selectedSatellite = useExplorerStore((s) => s.selectedSatellite);
 
-  // Earth Intelligence states
+  // Earth Intelligence layer visibility
   const swotWaterVisible = useExplorerStore((s) => s.swotWaterVisible);
   const disastersVisible = useExplorerStore((s) => s.disastersVisible);
   const radarVisible = useExplorerStore((s) => s.radarVisible);
   const geocaVisible = useExplorerStore((s) => s.geocaVisible);
-  const selectedWaterBody = useExplorerStore((s) => s.selectedWaterBody);
-  const selectedDisasterEvent = useExplorerStore((s) => s.selectedDisasterEvent);
-  const selectedRadarScene = useExplorerStore((s) => s.selectedRadarScene);
-  const selectedGeoCaDataset = useExplorerStore((s) => s.selectedGeoCaDataset);
 
   const [webglSupported, setWebglSupported] = useState(true);
 
@@ -101,41 +88,6 @@ export function GlobeCanvas() {
       <Suspense fallback={null}>
         <DebugWrapper />
       </Suspense>
-      <GlobeControls />
-
-      {/* Satellite UI overlays */}
-      {satelliteMode && (
-        <Suspense fallback={null}>
-          <SatelliteSearch />
-        </Suspense>
-      )}
-      {selectedSatellite && (
-        <Suspense fallback={null}>
-          <SatelliteInfoPanel />
-        </Suspense>
-      )}
-
-      {/* Earth Intelligence Modals */}
-      {selectedWaterBody && (
-        <Suspense fallback={null}>
-          <WaterIntelligenceModal />
-        </Suspense>
-      )}
-      {selectedDisasterEvent && (
-        <Suspense fallback={null}>
-          <DisasterModal />
-        </Suspense>
-      )}
-      {selectedRadarScene && (
-        <Suspense fallback={null}>
-          <RadarInspectorModal />
-        </Suspense>
-      )}
-      {selectedGeoCaDataset && (
-        <Suspense fallback={null}>
-          <GeoCaModal />
-        </Suspense>
-      )}
 
       <Canvas
         dpr={[1, 2]}

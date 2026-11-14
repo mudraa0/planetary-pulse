@@ -20,7 +20,17 @@ export function LocationComparisonModal() {
 
   if (!comparisonMode) return null;
 
-  const compareLayers = ['temperature', 'anomaly', 'aqi', 'wind', 'sst'] as const;
+  const compareLayers = [
+    'temperature',
+    'anomaly',
+    'aqi',
+    'wind',
+    'sst',
+    'ndvi',
+    'soil_moisture',
+    'forestry',
+    'swot_water',
+  ] as const;
 
   return (
     <div

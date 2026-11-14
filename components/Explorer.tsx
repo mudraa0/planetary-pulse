@@ -12,6 +12,13 @@ import { DrilldownPanel } from '@/components/panels/DrilldownPanel';
 import { HelpDialog } from '@/components/hud/HelpDialog';
 import { HistoricalTimeline } from '@/components/hud/HistoricalTimeline';
 import { LocationComparisonModal } from '@/components/hud/LocationComparisonModal';
+import { GlobeControls } from '@/components/hud/GlobeControls';
+import { SatelliteSearch } from '@/components/hud/SatelliteSearch';
+import { SatelliteInfoPanel } from '@/components/panels/SatelliteInfoPanel';
+import { WaterIntelligenceModal } from '@/components/panels/WaterIntelligenceModal';
+import { DisasterModal } from '@/components/panels/DisasterModal';
+import { RadarInspectorModal } from '@/components/panels/RadarInspectorModal';
+import { GeoCaModal } from '@/components/panels/GeoCaModal';
 import type { LayerId } from '@/types/layers';
 import { MousePointerClick, X } from 'lucide-react';
 
@@ -74,6 +81,14 @@ export function Explorer() {
   const setParticlesOn = useExplorerStore((s) => s.setParticlesOn);
   const panelOpen = useExplorerStore((s) => s.panelOpen);
   const closePanel = useExplorerStore((s) => s.closePanel);
+
+  // Satellite and Earth Intelligence states
+  const satelliteMode = useExplorerStore((s) => s.satelliteMode);
+  const selectedSatellite = useExplorerStore((s) => s.selectedSatellite);
+  const selectedWaterBody = useExplorerStore((s) => s.selectedWaterBody);
+  const selectedDisasterEvent = useExplorerStore((s) => s.selectedDisasterEvent);
+  const selectedRadarScene = useExplorerStore((s) => s.selectedRadarScene);
+  const selectedGeoCaDataset = useExplorerStore((s) => s.selectedGeoCaDataset);
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -168,6 +183,19 @@ export function Explorer() {
             }}
           >
             {mode === '3d' ? <GlobeCanvas /> : <FlatMap />}
+
+            {/* Viewport Control Palette */}
+            <GlobeControls />
+
+            {/* Satellite Tracking UI Overlays */}
+            {satelliteMode && <SatelliteSearch />}
+            {selectedSatellite && <SatelliteInfoPanel />}
+
+            {/* Earth Intelligence Specialized Inspector Modals */}
+            {selectedWaterBody && <WaterIntelligenceModal />}
+            {selectedDisasterEvent && <DisasterModal />}
+            {selectedRadarScene && <RadarInspectorModal />}
+            {selectedGeoCaDataset && <GeoCaModal />}
 
             {/* Bottom-left Data Legend */}
             <div
